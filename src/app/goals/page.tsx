@@ -9,6 +9,7 @@ import { GoalForm } from '@/components/goals/goal-form'
 import { GoalFilters, type GoalFiltersType, type SortOption, type SortDirection } from '@/components/goals/goal-filters'
 import { FilterPreferencesMenu } from '@/components/goals/filter-preferences-menu'
 import { useFilterPreferences } from '@/hooks/use-filter-preferences'
+import { GoalCard } from '@/components/goals/goal-card'
 
 const DEFAULT_FILTERS: GoalFiltersType = {
   type: 'all',
@@ -228,73 +229,7 @@ export default function GoalsPage() {
             </div>
           ) : (
             filteredGoals.map((goal) => (
-              <div
-                key={goal.id}
-                className="group bg-white dark:bg-gray-800 shadow hover:shadow-md rounded-lg overflow-hidden transition-all duration-200 transform hover:-translate-y-1"
-              >
-                <div className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          goal.type === 'do'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-100'
-                            : 'bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-100'
-                        }`}
-                      >
-                        {goal.type === 'do' ? 'DO' : "DON'T"}
-                      </span>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">
-                        {goal.category}
-                      </span>
-                    </div>
-                    <Link
-                      href={`/goals/${goal.id}`}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium flex items-center gap-1"
-                    >
-                      View Details
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Link>
-                  </div>
-                  <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
-                    {goal.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{goal.description}</p>
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">Progress</span>
-                      <span className="font-medium text-gray-900 dark:text-white">{goal.progress}%</span>
-                    </div>
-                    <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-500 ease-out ${
-                          goal.type === 'do'
-                            ? 'bg-primary-600 dark:bg-primary-500'
-                            : 'bg-red-600 dark:bg-red-500'
-                        }`}
-                        style={{ width: `${goal.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                  {goal.milestones && goal.milestones.length > 0 && (
-                    <div className="mt-4 flex items-center gap-2">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                        />
-                      </svg>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">
-                        {goal.milestones.filter((m) => m.completed).length} of {goal.milestones.length} milestones
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <GoalCard key={goal.id} goal={goal} />
             ))
           )}
         </div>

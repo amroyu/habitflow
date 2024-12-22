@@ -3,6 +3,7 @@ import { Fragment, useState, useEffect } from 'react'
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { CalendarIcon } from '@heroicons/react/20/solid'
 import { Goal, Milestone } from '@/types'
+import { format } from 'date-fns'
 
 interface GoalFormProps {
   isOpen: boolean
@@ -48,25 +49,17 @@ const POSITIVE_CATEGORIES = [
   // Lifestyle
   'Lifestyle',
   'Travel',
-  'Adventure',
   'Hobbies',
   'Recreation',
+  'Adventure',
   'Entertainment',
-  
-  // Home & Environment
-  'Home',
-  'Organization',
-  'Cleaning',
-  'Decluttering',
-  'Environment',
-  'Sustainability',
   
   // Productivity
   'Productivity',
   'Time Management',
-  'Work',
-  'Projects',
+  'Organization',
   'Goals',
+  'Planning',
   'Habits',
   
   // Creativity
@@ -75,132 +68,89 @@ const POSITIVE_CATEGORIES = [
   'Music',
   'Writing',
   'Design',
-  'Photography',
+  'Innovation',
   
-  // Spiritual
-  'Spiritual',
-  'Religion',
-  'Faith',
-  'Mindfulness',
-  'Purpose',
-  'Values',
+  // Personal Care
+  'Self-Care',
+  'Grooming',
+  'Fashion',
+  'Beauty',
+  
+  // Home
+  'Home',
+  'Household',
+  'Gardening',
+  'Decoration',
+  'DIY',
+  
+  // Technology
+  'Technology',
+  'Digital',
+  'Coding',
+  'Gaming',
+  
+  // Environment
+  'Environment',
+  'Sustainability',
+  'Nature',
+  'Conservation',
   
   // Community
   'Community',
   'Volunteering',
   'Charity',
   'Social Impact',
-  'Leadership',
-  'Mentoring',
   
-  // Technology
-  'Technology',
-  'Digital',
-  'Innovation',
-  'Coding',
-  'Gaming',
-  
-  // Culture & Language
-  'Culture',
-  'Language',
-  'Reading',
-  'Learning',
-  'Travel',
-  
-  // Other
-  'Other',
-  'Miscellaneous'
+  // Spirituality
+  'Spirituality',
+  'Religion',
+  'Faith',
+  'Mindfulness'
 ].sort()
 
 const NEGATIVE_CATEGORIES = [
-  // Health & Addictions
+  // Health
   'Smoking',
   'Alcohol',
-  'Drugs',
-  'Overeating',
   'Junk Food',
-  'Unhealthy Snacking',
-  'Sleep Deprivation',
-  'Sedentary Lifestyle',
+  'Overeating',
+  'Drugs',
   
-  // Digital & Technology
-  'Social Media Addiction',
-  'Smartphone Addiction',
-  'Gaming Addiction',
+  // Technology
+  'Social Media',
+  'Gaming',
+  'Phone Addiction',
+  'TV',
   'Internet Addiction',
-  'Excessive Screen Time',
-  'Digital Distractions',
-  'Doom Scrolling',
   
-  // Mental & Emotional
-  'Negative Self-Talk',
+  // Behavior
   'Procrastination',
-  'Overthinking',
-  'Anxiety Habits',
-  'Stress Eating',
-  'Anger Issues',
+  'Laziness',
+  'Negative Thinking',
   'Complaining',
-  'Self-Criticism',
+  'Gossiping',
+  'Lying',
   
-  // Productivity & Work
-  'Time Wasting',
-  'Multitasking',
-  'Work Avoidance',
-  'Disorganization',
-  'Late Night Working',
-  'Meeting Tardiness',
-  'Task Switching',
-  
-  // Financial
-  'Impulse Buying',
+  // Finance
   'Overspending',
   'Gambling',
-  'Unnecessary Subscriptions',
-  'Emotional Shopping',
-  'Credit Card Debt',
+  'Impulse Buying',
+  
+  // Lifestyle
+  'Late Night',
+  'Oversleeping',
+  'Nail Biting',
+  'Swearing',
   
   // Relationships
-  'Gossip',
   'Toxic Relationships',
-  'Emotional Dependency',
-  'People Pleasing',
-  'Relationship Sabotage',
+  'Drama',
   'Jealousy',
-  'Controlling Behavior',
   
-  // Communication
-  'Interrupting',
-  'Excessive Cursing',
-  'Negative Communication',
-  'Passive Aggression',
-  'Silent Treatment',
-  'Defensive Behavior',
-  
-  // Physical Habits
-  'Nail Biting',
-  'Hair Pulling',
-  'Teeth Grinding',
-  'Poor Posture',
-  'Excessive Caffeine',
-  'Skipping Meals',
-  
-  // Environmental
-  'Cluttering',
-  'Hoarding',
-  'Environmental Waste',
-  'Energy Waste',
-  'Excessive Plastic Use',
-  
-  // Personal Development
-  'Self-Sabotage',
-  'Fear Avoidance',
-  'Comfort Zone Dependency',
-  'Learning Resistance',
-  'Growth Mindset Blocks',
-  
-  // Other
-  'Other Bad Habits',
-  'Miscellaneous'
+  // Work
+  'Perfectionism',
+  'Overworking',
+  'Multitasking'
 ].sort()
 
 export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
@@ -219,7 +169,9 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
   const [customCategories, setCustomCategories] = useState<string[]>([])
   const [newMilestone, setNewMilestone] = useState('')
 
-  const allCategories = [...new Set([...(formData.type === 'do' ? POSITIVE_CATEGORIES : NEGATIVE_CATEGORIES), ...customCategories])]
+  // Get categories based on goal type
+  const currentCategories = formData.type === 'do' ? POSITIVE_CATEGORIES : NEGATIVE_CATEGORIES
+  const allCategories = [...currentCategories, ...customCategories].filter((value, index, self) => self.indexOf(value) === index)
 
   useEffect(() => {
     const validCategories = formData.type === 'do' ? POSITIVE_CATEGORIES : NEGATIVE_CATEGORIES
@@ -231,7 +183,7 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
   const handleAddCategory = () => {
     if (newCategory.trim()) {
       setCustomCategories(prev => [...prev, newCategory.trim()])
-      setFormData(prev => ({ ...prev, category: newCategory.trim().toLowerCase() }))
+      setFormData(prev => ({ ...prev, category: newCategory.trim() }))
       setNewCategory('')
       setIsAddingCategory(false)
     }
@@ -242,14 +194,15 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
 
     const milestone: Milestone = {
       id: crypto.randomUUID(),
-      title: newMilestone,
+      title: newMilestone.trim(),
+      dueDate: formData.endDate ? new Date(formData.endDate + 'T00:00:00').toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       completed: false,
     }
 
-    setFormData({
-      ...formData,
-      milestones: [...formData.milestones, milestone],
-    })
+    setFormData(prev => ({
+      ...prev,
+      milestones: [...prev.milestones, milestone],
+    }))
     setNewMilestone('')
   }
 
@@ -349,7 +302,7 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
                         Category
                       </label>
                       {isAddingCategory ? (
-                        <div className="mt-1 flex gap-2">
+                        <div className="mt-1 flex gap-2 relative">
                           <input
                             type="text"
                             value={newCategory}
@@ -386,8 +339,8 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                           >
                             <option value="">Select a category</option>
-                            {Array.from(allCategories).map((category) => (
-                              <option key={category} value={category.toLowerCase()}>
+                            {allCategories.map((category) => (
+                              <option key={category} value={category}>
                                 {category}
                               </option>
                             ))}
@@ -414,7 +367,7 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
                           type="date"
                           id="startDate"
                           className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          value={formData.startDate}
+                          value={format(new Date(formData.startDate), 'yyyy-MM-dd')}
                           onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                         />
                         <CalendarIcon className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -430,8 +383,9 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
                           type="date"
                           id="endDate"
                           className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          value={formData.endDate}
+                          value={format(new Date(formData.endDate), 'yyyy-MM-dd')}
                           onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                          min={format(new Date(formData.startDate), 'yyyy-MM-dd')}
                         />
                         <CalendarIcon className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                       </div>
