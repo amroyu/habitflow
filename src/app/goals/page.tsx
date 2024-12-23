@@ -1,15 +1,21 @@
 'use client'
 
 import { DashboardLayout } from '@/components/dashboard/layout'
-import { mockGoals } from '@/lib/mock-data'
 import Link from 'next/link'
 import { useState, useMemo } from 'react'
-import { Goal } from '@/types'
+import { Goal, GoalType } from '@/types'
 import { GoalForm } from '@/components/goals/goal-form'
-import { GoalFilters, type GoalFiltersType, type SortOption, type SortDirection } from '@/components/goals/goal-filters'
+import { 
+  GoalFilters, 
+  type GoalFiltersType, 
+  type SortOption, 
+  type SortDirection 
+} from '@/components/goals/goal-filters'
 import { FilterPreferencesMenu } from '@/components/goals/filter-preferences-menu'
 import { useFilterPreferences } from '@/hooks/use-filter-preferences'
 import { GoalCard } from '@/components/goals/goal-card'
+import { DailyEntries } from '@/components/goals/daily-entries'
+import { GoalCompare } from '@/components/goals/goal-compare'
 
 const DEFAULT_FILTERS: GoalFiltersType = {
   type: 'all',
@@ -31,10 +37,54 @@ const DEFAULT_SORT = {
   direction: 'asc' as SortDirection,
 }
 
+const mockGoals: Goal[] = [
+  {
+    id: '1',
+    title: 'Learn TypeScript',
+    description: 'Master TypeScript and its advanced features',
+    type: 'do',
+    category: 'Education',
+    startDate: '2024-01-01',
+    endDate: '2024-12-31',
+    progress: 25,
+    milestones: [],
+    streak: {
+      currentStreak: 5,
+      longestStreak: 7,
+      lastUpdated: new Date().toISOString()
+    },
+    entries: [],
+    completed: false,
+    lastUpdated: new Date().toISOString()
+  },
+  {
+    id: '2',
+    title: 'Exercise Daily',
+    description: 'Maintain a healthy exercise routine',
+    type: 'do',
+    category: 'Physical Health',
+    startDate: '2024-01-01',
+    endDate: '2024-12-31',
+    progress: 60,
+    milestones: [],
+    streak: {
+      currentStreak: 3,
+      longestStreak: 10,
+      lastUpdated: new Date().toISOString()
+    },
+    entries: [],
+    completed: false,
+    lastUpdated: new Date().toISOString()
+  }
+]
+
 export default function GoalsPage() {
+  const [goals, setGoals] = useState<Goal[]>(mockGoals)
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showCompareForm, setShowCompareForm] = useState(false)
   const [filters, setFilters] = useState<GoalFiltersType>(DEFAULT_FILTERS)
   const [sort, setSort] = useState(DEFAULT_SORT)
-  const [showCreateForm, setShowCreateForm] = useState(false)
 
   const {
     preferences,
@@ -72,7 +122,7 @@ export default function GoalsPage() {
   }
 
   const filteredGoals = useMemo(() => {
-    let result = [...mockGoals]
+    let result = [...goals]
 
     // Apply type filter
     if (filters.type !== 'all') {
@@ -145,44 +195,40 @@ export default function GoalsPage() {
     })
 
     return result
-  }, [filters, sort])
+  }, [filters, sort, goals])
 
   const categories = useMemo(() => {
-    const uniqueCategories = new Set(mockGoals.map((goal) => goal.category))
+    const uniqueCategories = new Set(goals.map((goal) => goal.category))
     return Array.from(uniqueCategories)
-  }, [])
+  }, [goals])
+
+  const handleSelectGoal = (goal: Goal) => {
+    setSelectedGoal(goal)
+  }
+
+  const handleUpdateGoal = (updatedGoal: Goal) => {
+    const newGoals = goals.map(g => g.id === updatedGoal.id ? updatedGoal : g)
+    setGoals(newGoals)
+    setSelectedGoal(updatedGoal)
+  }
 
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Goals
-            </h1>
-            <p className="mt-2 text-base text-gray-600 dark:text-gray-400">
-              Track and manage your goals to build better habits
-            </p>
-          </div>
-          <div className="flex items-center gap-4 self-stretch sm:self-auto">
-            <FilterPreferencesMenu
-              preferences={preferences}
-              activePreference={activePreference}
-              currentFilters={filters}
-              currentSort={sort}
-              onSavePreference={handleSavePreference}
-              onLoadPreference={handleLoadPreference}
-              onDeletePreference={deletePreference}
-              onClearPreference={handleClearPreference}
-            />
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Goals</h1>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowCompareForm(true)}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Compare Goals
+            </button>
             <button
               onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
               Create Goal
             </button>
           </div>
@@ -221,7 +267,7 @@ export default function GoalsPage() {
               <div className="mt-6">
                 <button
                   onClick={() => setShowCreateForm(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Create New Goal
                 </button>
@@ -229,15 +275,53 @@ export default function GoalsPage() {
             </div>
           ) : (
             filteredGoals.map((goal) => (
-              <GoalCard key={goal.id} goal={goal} />
+              <GoalCard
+                key={goal.id}
+                goal={goal}
+                onUpdateGoal={handleUpdateGoal}
+              />
             ))
           )}
         </div>
+
+        <div className="space-y-4">
+          {selectedGoal && (
+            <>
+              <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
+                <div className="px-4 py-5 sm:px-6">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900">
+                    {selectedGoal.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {selectedGoal.description}
+                  </p>
+                </div>
+                <div className="px-4 py-5 sm:p-6">
+                  <DailyEntries
+                    goal={selectedGoal}
+                    onUpdateGoal={handleUpdateGoal}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
       </div>
 
       <GoalForm
         isOpen={showCreateForm}
         onClose={() => setShowCreateForm(false)}
+        onSave={(newGoal) => {
+          setGoals(prevGoals => [...prevGoals, { ...newGoal, id: String(Date.now()) }])
+          setShowCreateForm(false)
+        }}
+      />
+
+      <GoalCompare
+        isOpen={showCompareForm}
+        onClose={() => setShowCompareForm(false)}
+        goals={goals}
       />
     </DashboardLayout>
   )

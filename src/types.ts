@@ -14,11 +14,50 @@ export interface Streak {
   lastUpdated: string
 }
 
+export type MilestoneFrequency = 'one-time' | 'daily' | 'weekly' | 'monthly' | 'yearly'
+
 export interface Milestone {
   id: string
   title: string
   dueDate: string
   completed: boolean
+  frequency: MilestoneFrequency
+  lastCompleted?: string
+}
+
+export type EntryContentType = 
+  | 'text' 
+  | 'checklist' 
+  | 'link' 
+  | 'file' 
+  | 'spreadsheet'
+  | 'note'
+
+export interface ChecklistItem {
+  id: string
+  text: string
+  completed: boolean
+}
+
+export interface EntryContent {
+  type: EntryContentType
+  data: {
+    text?: string
+    items?: ChecklistItem[]
+    url?: string
+    fileUrl?: string
+    fileName?: string
+  }
+}
+
+export interface DailyEntry {
+  id: string
+  goalId: string
+  date: string
+  contents: EntryContent[]
+  createdAt: string
+  updatedAt: string
+  milestoneId?: string // Optional field for entries linked to milestones
 }
 
 export interface Goal {
@@ -33,6 +72,9 @@ export interface Goal {
   milestones: Milestone[]
   streak: Streak
   lastUpdated: string
+  entries: DailyEntry[]
+  completed: boolean
+  completedAt?: string
 }
 
 export interface User {

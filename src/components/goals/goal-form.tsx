@@ -2,12 +2,13 @@ import { Dialog, Transition } from '@headlessui/react'
 import { Fragment, useState, useEffect } from 'react'
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { CalendarIcon } from '@heroicons/react/20/solid'
-import { Goal, Milestone } from '@/types'
+import { Goal, Milestone, MilestoneFrequency } from '@/types'
 import { format } from 'date-fns'
 
 interface GoalFormProps {
   isOpen: boolean
   onClose: () => void
+  onSave: (goal: Goal) => void
   initialData?: Goal
 }
 
@@ -153,15 +154,27 @@ const NEGATIVE_CATEGORIES = [
   'Multitasking'
 ].sort()
 
-export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
-  const [formData, setFormData] = useState({
+interface MilestoneFormData {
+  title: string
+  dueDate: string
+  frequency: MilestoneFrequency
+}
+
+export function GoalForm({ isOpen, onClose, onSave, initialData }: GoalFormProps) {
+  const [formData, setFormData] = useState<Omit<Goal, 'id' | 'progress' | 'entries' | 'streak' | 'lastUpdated'>>({
     title: initialData?.title || '',
     description: initialData?.description || '',
     type: initialData?.type || 'do',
     category: initialData?.category || '',
     startDate: initialData?.startDate || new Date().toISOString().split('T')[0],
-    endDate: initialData?.endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: initialData?.endDate || '',
     milestones: initialData?.milestones || []
+  })
+
+  const [milestoneForm, setMilestoneForm] = useState<MilestoneFormData>({
+    title: '',
+    dueDate: '',
+    frequency: 'one-time'
   })
 
   const [isAddingCategory, setIsAddingCategory] = useState(false)
@@ -189,21 +202,24 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
     }
   }
 
-  const handleAddMilestone = () => {
-    if (!newMilestone.trim()) return
-
-    const milestone: Milestone = {
-      id: crypto.randomUUID(),
-      title: newMilestone.trim(),
-      dueDate: formData.endDate ? new Date(formData.endDate + 'T00:00:00').toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      completed: false,
+  const handleAddMilestone = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (milestoneForm.title && milestoneForm.dueDate) {
+      const newMilestone: Milestone = {
+        id: crypto.randomUUID(),
+        ...milestoneForm,
+        completed: false
+      }
+      setFormData({
+        ...formData,
+        milestones: [...formData.milestones, newMilestone]
+      })
+      setMilestoneForm({
+        title: '',
+        dueDate: '',
+        frequency: 'one-time'
+      })
     }
-
-    setFormData(prev => ({
-      ...prev,
-      milestones: [...prev.milestones, milestone],
-    }))
-    setNewMilestone('')
   }
 
   const handleRemoveMilestone = (id: string) => {
@@ -215,8 +231,19 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Add form validation and submission logic
-    onClose()
+    const newGoal: Goal = {
+      id: initialData?.id || crypto.randomUUID(),
+      ...formData,
+      progress: initialData?.progress || 0,
+      entries: initialData?.entries || [],
+      streak: initialData?.streak || {
+        currentStreak: 0,
+        longestStreak: 0,
+        lastUpdated: new Date().toISOString()
+      },
+      lastUpdated: new Date().toISOString()
+    }
+    onSave(newGoal)
   }
 
   return (
@@ -231,7 +258,7 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-90" />
+          <div className="fixed inset-0 bg-black/25" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -245,230 +272,254 @@ export function GoalForm({ isOpen, onClose, initialData }: GoalFormProps) {
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
-              <Dialog.Panel className="relative w-full max-w-lg transform overflow-hidden rounded-lg bg-white dark:bg-gray-900 shadow-xl transition-all">
+              <Dialog.Panel className="relative w-full max-w-2xl transform rounded-lg bg-white shadow-xl transition-all">
                 <div className="border-b border-border px-8 py-6">
-                  <Dialog.Title className="text-2xl font-semibold text-foreground">
+                  <Dialog.Title className="text-lg font-semibold">
                     {initialData ? 'Edit Goal' : 'Create New Goal'}
                   </Dialog.Title>
                 </div>
 
-                <form onSubmit={handleSubmit} className="px-8 py-6 space-y-6">
-                  <div className="space-y-2">
-                    <label htmlFor="title" className="block text-sm font-medium text-muted-foreground">
-                      Title
-                    </label>
-                    <input
-                      type="text"
-                      id="title"
-                      className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="Enter your goal title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="description" className="block text-sm font-medium text-muted-foreground">
-                      Description
-                    </label>
-                    <textarea
-                      id="description"
-                      rows={4}
-                      className="w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="Describe your goal and what you want to achieve"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                  <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                    {/* Title */}
                     <div className="space-y-2">
-                      <label htmlFor="type" className="block text-sm font-medium text-muted-foreground">
-                        Goal Type
+                      <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        id="title"
+                        required
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                        className="block w-full rounded-md border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                        Description
+                      </label>
+                      <textarea
+                        id="description"
+                        required
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        rows={3}
+                        className="block w-full rounded-md border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      />
+                    </div>
+
+                    {/* Type */}
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-700">Type</label>
+                      <div className="flex gap-4">
+                        <label className="inline-flex items-center">
+                          <input
+                            type="radio"
+                            value="do"
+                            checked={formData.type === 'do'}
+                            onChange={(e) => setFormData({ ...formData, type: e.target.value as 'do' | 'dont' })}
+                            className="form-radio h-4 w-4 text-indigo-600"
+                          />
+                          <span className="ml-2">Do</span>
+                        </label>
+                        <label className="inline-flex items-center">
+                          <input
+                            type="radio"
+                            value="dont"
+                            checked={formData.type === 'dont'}
+                            onChange={(e) => setFormData({ ...formData, type: e.target.value as 'do' | 'dont' })}
+                            className="form-radio h-4 w-4 text-indigo-600"
+                          />
+                          <span className="ml-2">Don't</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Category */}
+                    <div className="space-y-2">
+                      <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+                        Category
                       </label>
                       <select
-                        id="type"
-                        className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        value={formData.type}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value as 'do' | 'dont' })}
+                        id="category"
+                        required
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="block w-full rounded-md border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                       >
-                        <option value="do">DO (Positive Goal)</option>
-                        <option value="dont">DON'T (Break Bad Habit)</option>
+                        <option value="">Select a category</option>
+                        {allCategories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
-                    <div className="space-y-2">
-                      <label htmlFor="category" className="block text-sm font-medium text-muted-foreground">
-                        Category
-                      </label>
-                      {isAddingCategory ? (
-                        <div className="mt-1 flex gap-2 relative">
-                          <input
-                            type="text"
-                            value={newCategory}
-                            onChange={(e) => setNewCategory(e.target.value)}
-                            className="block flex-1 rounded-lg border border-input bg-background px-4 py-3 text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            placeholder="New category name"
-                            autoFocus
-                          />
-                          <button
-                            type="button"
-                            onClick={handleAddCategory}
-                            disabled={!newCategory.trim()}
-                            className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:pointer-events-none disabled:opacity-50"
-                          >
-                            Add
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setIsAddingCategory(false)
-                              setNewCategory('')
-                            }}
-                            className="inline-flex items-center justify-center rounded-lg border border-input bg-background px-4 py-3 text-sm font-medium text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <select
-                            id="category"
-                            className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            value={formData.category}
-                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                          >
-                            <option value="">Select a category</option>
-                            {allCategories.map((category) => (
-                              <option key={category} value={category}>
-                                {category}
-                              </option>
-                            ))}
-                          </select>
-                          <button
-                            type="button"
-                            onClick={() => setIsAddingCategory(true)}
-                            className="h-11 inline-flex items-center justify-center rounded-lg border border-input bg-background px-3 text-sm font-medium text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          >
-                            <PlusIcon className="h-5 w-5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label htmlFor="startDate" className="block text-sm font-medium text-muted-foreground">
-                        Start Date
-                      </label>
-                      <div className="relative">
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
+                          Start Date
+                        </label>
                         <input
                           type="date"
                           id="startDate"
-                          className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          value={format(new Date(formData.startDate), 'yyyy-MM-dd')}
+                          required
+                          value={formData.startDate}
                           onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                          className="block w-full rounded-md border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
-                        <CalendarIcon className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label htmlFor="endDate" className="block text-sm font-medium text-muted-foreground">
-                        End Date
-                      </label>
-                      <div className="relative">
+                      <div className="space-y-2">
+                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700">
+                          End Date
+                        </label>
                         <input
                           type="date"
                           id="endDate"
-                          className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          value={format(new Date(formData.endDate), 'yyyy-MM-dd')}
+                          required
+                          value={formData.endDate}
+                          min={formData.startDate}
                           onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                          min={format(new Date(formData.startDate), 'yyyy-MM-dd')}
+                          className="block w-full rounded-md border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
-                        <CalendarIcon className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                      </div>
+                    </div>
+
+                    {/* Milestones */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-medium text-gray-900">Milestones</h3>
+                        {formData.milestones.length > 0 && (
+                          <span className="text-sm text-gray-500">
+                            {formData.milestones.length} milestone{formData.milestones.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Existing Milestones */}
+                      {formData.milestones.length > 0 && (
+                        <div className="space-y-2 max-h-60 overflow-y-auto border rounded-lg p-4 bg-gray-50">
+                          {formData.milestones.map((milestone, index) => (
+                            <div key={milestone.id} className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
+                              <div className="flex-1 min-w-0 mr-4">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-sm font-medium text-gray-900 truncate">
+                                    {milestone.title}
+                                  </p>
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                    {milestone.frequency.split('-').map(word => 
+                                      word.charAt(0).toUpperCase() + word.slice(1)
+                                    ).join(' ')}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                  Due: {new Date(milestone.dueDate).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newMilestones = [...formData.milestones]
+                                  newMilestones.splice(index, 1)
+                                  setFormData({ ...formData, milestones: newMilestones })
+                                }}
+                                className="text-gray-400 hover:text-red-600 transition-colors"
+                              >
+                                <XMarkIcon className="h-5 w-5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add New Milestone Form */}
+                      <div className="border rounded-lg p-4 space-y-4">
+                        <h4 className="text-sm font-medium text-gray-900">Add New Milestone</h4>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div>
+                            <label htmlFor="milestone-title" className="block text-sm font-medium text-gray-700">
+                              Title
+                            </label>
+                            <input
+                              type="text"
+                              id="milestone-title"
+                              value={milestoneForm.title}
+                              onChange={(e) => setMilestoneForm({ ...milestoneForm, title: e.target.value })}
+                              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              placeholder="Enter milestone title"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label htmlFor="milestone-date" className="block text-sm font-medium text-gray-700">
+                                Due Date
+                              </label>
+                              <input
+                                type="date"
+                                id="milestone-date"
+                                value={milestoneForm.dueDate}
+                                onChange={(e) => setMilestoneForm({ ...milestoneForm, dueDate: e.target.value })}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor="milestone-frequency" className="block text-sm font-medium text-gray-700">
+                                Frequency
+                              </label>
+                              <select
+                                id="milestone-frequency"
+                                value={milestoneForm.frequency}
+                                onChange={(e) => setMilestoneForm({ 
+                                  ...milestoneForm, 
+                                  frequency: e.target.value as MilestoneFrequency 
+                                })}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              >
+                                <option value="one-time">One Time</option>
+                                <option value="daily">Daily</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                                <option value="yearly">Yearly</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={handleAddMilestone}
+                              disabled={!milestoneForm.title || !milestoneForm.dueDate}
+                              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <PlusIcon className="h-4 w-4 mr-1.5" />
+                              Add Milestone
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="block text-sm font-medium text-muted-foreground">
-                      Milestones
-                    </label>
-                    <div className="space-y-3">
-                      {formData.milestones.map((milestone, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            value={milestone.title}
-                            onChange={(e) => {
-                              const newMilestones = [...formData.milestones]
-                              newMilestones[index].title = e.target.value
-                              setFormData({ ...formData, milestones: newMilestones })
-                            }}
-                            placeholder={`Milestone ${index + 1}`}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveMilestone(milestone.id)}
-                            className="h-11 inline-flex items-center justify-center rounded-lg border border-input bg-background px-3 text-sm font-medium text-foreground shadow-sm hover:bg-destructive hover:text-destructive-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        </div>
-                      ))}
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          className="w-full h-11 rounded-lg border border-input bg-background px-4 text-foreground shadow-sm ring-offset-background placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          value={newMilestone}
-                          onChange={(e) => setNewMilestone(e.target.value)}
-                          placeholder="Add a milestone"
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              handleAddMilestone();
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleAddMilestone}
-                          disabled={!newMilestone}
-                          className="h-11 inline-flex items-center justify-center rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:pointer-events-none disabled:opacity-50"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
+                  <div className="border-t border-gray-200 px-8 py-6 flex justify-end space-x-4">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      {initialData ? 'Update Goal' : 'Create Goal'}
+                    </button>
                   </div>
                 </form>
-
-                <div className="border-t border-border px-8 py-6 flex justify-end gap-4">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="h-11 inline-flex items-center justify-center rounded-lg border border-input bg-background px-6 text-sm font-medium text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="h-11 inline-flex items-center justify-center rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    {initialData ? 'Update Goal' : 'Create Goal'}
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="absolute right-4 top-4 rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
               </Dialog.Panel>
             </Transition.Child>
           </div>
