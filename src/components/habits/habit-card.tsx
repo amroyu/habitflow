@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle2, MoreVertical, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 interface HabitCardProps {
   title: string;
@@ -13,7 +14,7 @@ interface HabitCardProps {
   type: 'good' | 'bad';
   streak: number;
   progress: number;
-  lastCompleted?: Date;
+  lastCompleted?: string;
   onComplete?: () => void;
 }
 
@@ -28,6 +29,10 @@ export function HabitCard({
   onComplete,
 }: HabitCardProps) {
   const isGoodHabit = type === 'good';
+  const lastCompletedDate = lastCompleted ? new Date(lastCompleted) : null;
+  const lastCompletedText = lastCompletedDate
+    ? formatDistanceToNow(lastCompletedDate, { addSuffix: true })
+    : 'Never';
   
   return (
     <Card className={cn(
@@ -69,6 +74,7 @@ export function HabitCard({
           <span className="flex items-center">
             {isGoodHabit ? '🎯' : '⚠️'} {streak} day streak
           </span>
+          <span className="ml-2">{lastCompletedText}</span>
         </div>
       </CardContent>
       <CardFooter>

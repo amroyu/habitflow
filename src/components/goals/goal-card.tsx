@@ -10,48 +10,41 @@ import {
   PencilIcon, 
   TrashIcon,
   CheckIcon,
-  XCircleIcon
+  XCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
 } from '@heroicons/react/20/solid'
 import Link from 'next/link'
 import { DailyEntryForm } from './daily-entry-form'
-import { format, formatDistanceToNow, isPast, startOfWeek, startOfDay, endOfDay, isWithinInterval, Interval } from 'date-fns'
+import { ProgressVisualization } from './progress-visualization'
+import { format, formatDistanceToNow, isPast, startOfWeek, startOfDay, endOfDay, isWithinInterval, Interval, differenceInDays } from 'date-fns'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { useRewards } from '@/context/rewards-context'
+import { POINTS } from '@/types/rewards'
 
 interface GoalCardProps {
   goal: Goal
   onUpdateGoal: (goal: Goal) => void
 }
 
-const getProgressColor = (progress: number) => {
-  if (progress >= 80) return 'bg-green-500'
-  if (progress >= 50) return 'bg-yellow-500'
-  return 'bg-blue-500'
-}
-
-const getTimeRemainingColor = (percentage: number) => {
-  if (percentage >= 70) return 'bg-green-500'
-  if (percentage >= 30) return 'bg-yellow-500'
-  return 'bg-red-500'
-}
-
 export function GoalCard({ goal, onUpdateGoal }: GoalCardProps) {
-  const [timeRemaining, setTimeRemaining] = useState<number>(100)
+  const { addPoints, checkAchievements } = useRewards()
   const [isEntryFormOpen, setIsEntryFormOpen] = useState(false)
   const [editingEntry, setEditingEntry] = useState<DailyEntry | null>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
 
-  useEffect(() => {
-    const calculateRemaining = () => {
-      const endDate = new Date(goal.endDate)
-      const startDate = new Date(goal.startDate)
-      const now = new Date()
-      
-      const totalDuration = endDate.getTime() - startDate.getTime()
-      const elapsed = now.getTime() - startDate.getTime()
-      return Math.max(0, Math.min(100, ((totalDuration - elapsed) / totalDuration) * 100))
-    }
-    
-    setTimeRemaining(calculateRemaining())
-  }, [goal.startDate, goal.endDate])
+  const calculateTimeProgress = () => {
+    const now = new Date()
+    const startDate = new Date(goal.startDate)
+    const endDate = new Date(goal.endDate)
+    const totalDuration = differenceInDays(endDate, startDate)
+    const elapsed = differenceInDays(now, startDate)
+    return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100)
+  }
+
+  const timeProgress = calculateTimeProgress()
+  const daysRemaining = differenceInDays(new Date(goal.endDate), new Date())
 
   const handleDeleteEntry = (entryId: string) => {
     if (confirm('Are you sure you want to delete this entry?')) {
@@ -302,6 +295,39 @@ export function GoalCard({ goal, onUpdateGoal }: GoalCardProps) {
       lastUpdated: new Date().toISOString()
     }
     onUpdateGoal(updatedGoal)
+    addPoints(POINTS.COMPLETE_GOAL, 'Completed goal: ' + goal.title)
+    checkAchievements()
+  }
+
+  const calculateProgress = (milestones: Milestone[]): number => {
+    if (milestones.length === 0) return 0
+    const completedCount = milestones.filter(m => m.status === 'completed').length
+    return Math.round((completedCount / milestones.length) * 100)
+  }
+
+  const handleMilestoneComplete = (milestoneIndex: number) => {
+    const updatedMilestones = [...goal.milestones].map((milestone, index) => {
+      if (index === milestoneIndex) {
+        const updatedMilestone: Milestone = {
+          ...milestone,
+          status: 'completed' as const,
+          progress: 100
+        }
+        return updatedMilestone
+      }
+      return milestone
+    })
+
+    const updatedGoal = {
+      ...goal,
+      milestones: updatedMilestones,
+      progress: calculateProgress(updatedMilestones),
+      lastUpdated: new Date().toISOString()
+    }
+
+    onUpdateGoal(updatedGoal)
+    addPoints(POINTS.COMPLETE_MILESTONE, 'Completed milestone: ' + updatedMilestones[milestoneIndex].title)
+    checkAchievements()
   }
 
   return (
@@ -332,179 +358,75 @@ export function GoalCard({ goal, onUpdateGoal }: GoalCardProps) {
             </div>
             <p className="text-sm text-gray-500 mt-1">{goal.description}</p>
           </div>
-          <button
-            onClick={() => setIsEntryFormOpen(true)}
-            className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            Add Entry
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <div className="text-gray-500">Progress</div>
-            <div className="font-medium text-gray-900">{goal.progress}%</div>
-          </div>
-          <div className="overflow-hidden bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full ${getProgressColor(goal.progress)}`}
-              style={{ width: `${goal.progress}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <div className="text-gray-500">Time Remaining</div>
-            <div className="font-medium text-gray-900">{Math.round(timeRemaining)}%</div>
-          </div>
-          <div className="overflow-hidden bg-gray-200 rounded-full h-2">
-            <div
-              className={`h-2 rounded-full ${getTimeRemainingColor(timeRemaining)}`}
-              style={{ width: `${timeRemaining}%` }}
-            />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsEntryFormOpen(true)}
+              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              Add Entry
+            </button>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              {isExpanded ? (
+                <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+              )}
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center text-gray-500">
-            <CalendarIcon className="h-4 w-4 mr-1" />
-            Streak: {goal.streak.currentStreak} days
-          </div>
-          <div className="flex items-center text-gray-500">
-            <CheckCircleIcon className="h-4 w-4 mr-1" />
-            Best: {goal.streak.longestStreak} days
-          </div>
-        </div>
-
-        {goal.entries && goal.entries.length > 0 && (
-          <div className="pt-4 border-t">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="text-sm font-medium text-gray-900">Daily Entries</h4>
-              <span className="text-xs text-gray-500">{goal.entries.length} entries</span>
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="flex flex-col space-y-1">
+              <span className="text-sm text-gray-500">Progress</span>
+              <div className="flex items-center space-x-2">
+                <Progress value={goal.progress} className="flex-1" />
+                <span className="text-sm font-medium">{goal.progress}%</span>
+              </div>
             </div>
-            <div className="space-y-3 max-h-60 overflow-y-auto">
-              {goal.entries
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                .map((entry) => (
-                  <div key={entry.id} className="bg-gray-50 rounded-lg p-3 space-y-2">
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>{new Date(entry.date).toLocaleDateString()}</span>
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => handleEditEntry(entry)}
-                          className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-                          title="Edit entry"
-                        >
-                          <PencilIcon className="h-4 w-4 text-gray-600" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEntry(entry.id)}
-                          className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-                          title="Delete entry"
-                        >
-                          <TrashIcon className="h-4 w-4 text-red-600" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      {entry.contents.map((content, index) => (
-                        <div key={index} className="text-sm">
-                          <div className="font-medium text-gray-700 mb-1">
-                            {content.type.charAt(0).toUpperCase() + content.type.slice(1)}
-                          </div>
-                          {renderEntryContent(content)}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+            <div className="flex flex-col space-y-1">
+              <span className="text-sm text-gray-500">Time Elapsed</span>
+              <div className="flex items-center space-x-2">
+                <Progress 
+                  value={timeProgress} 
+                  className="flex-1 [&>div]:bg-amber-500" 
+                />
+                <span className="text-sm font-medium">{Math.round(timeProgress)}%</span>
+              </div>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <span className="text-sm text-gray-500">Streak</span>
+              <div className="flex items-center space-x-2">
+                <CalendarIcon className="h-4 w-4 text-gray-400" />
+                <span className="text-sm font-medium">{goal.streak.currentStreak} days</span>
+              </div>
             </div>
           </div>
-        )}
 
-        {goal.milestones.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium text-gray-900">Milestones</h4>
-            <div className="space-y-2">
-              {goal.milestones.map((milestone) => {
-                const isRecurring = milestone.frequency !== 'one-time'
-                const lastCompleted = milestone.lastCompleted ? new Date(milestone.lastCompleted) : null
-                const isCompletedInCurrentPeriod = lastCompleted ? isWithinCurrentPeriod(lastCompleted, milestone.frequency) : false
-                const displayCompleted = isRecurring ? isCompletedInCurrentPeriod : milestone.completed
-                const timeRemaining = getTimeRemaining(milestone.dueDate, milestone.frequency)
-
-                return (
-                  <div
-                    key={milestone.id}
-                    className="flex items-center justify-between p-3 rounded-md bg-gray-50"
-                  >
-                    <div className="flex items-center space-x-3 flex-1">
-                      <input
-                        type="checkbox"
-                        checked={displayCompleted}
-                        onChange={() => handleToggleMilestone(milestone)}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className={`text-sm ${displayCompleted ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                            {milestone.title}
-                          </p>
-                          <span className={`text-xs ${timeRemaining.color}`}>
-                            {timeRemaining.text}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
-                          <span>{format(new Date(milestone.dueDate), 'MMM d, yyyy')}</span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800">
-                            {milestone.frequency.charAt(0).toUpperCase() + milestone.frequency.slice(1)}
-                          </span>
-                          {lastCompleted && (
-                            <span>Last completed: {format(lastCompleted, 'MMM d')}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      <button
-                        onClick={() => {
-                          setIsEntryFormOpen(true)
-                          setEditingEntry({
-                            id: crypto.randomUUID(),
-                            goalId: goal.id,
-                            date: new Date().toISOString(),
-                            contents: [],
-                            createdAt: new Date().toISOString(),
-                            updatedAt: new Date().toISOString(),
-                            milestoneId: milestone.id
-                          })
-                        }}
-                        className="p-1 hover:bg-gray-200 rounded-full transition-colors"
-                        title="Add entry for this milestone"
-                      >
-                        <PlusIcon className="h-5 w-5 text-indigo-600" />
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
+          {isExpanded && (
+            <div className="space-y-6 pt-4">
+              <ProgressVisualization goal={goal} />
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </motion.div>
 
-      <DailyEntryForm
-        isOpen={isEntryFormOpen}
-        onClose={() => {
-          setIsEntryFormOpen(false)
-          setEditingEntry(null)
-        }}
-        goalId={goal.id}
-        onSave={handleSaveEntry}
-        initialData={editingEntry}
-      />
+      {isEntryFormOpen && (
+        <DailyEntryForm
+          isOpen={isEntryFormOpen}
+          onClose={() => {
+            setIsEntryFormOpen(false)
+            setEditingEntry(null)
+          }}
+          goalId={goal.id}
+          onSave={handleSaveEntry}
+          initialData={editingEntry}
+        />
+      )}
     </>
-  )
+  );
 }

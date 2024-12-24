@@ -1,13 +1,12 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Goal } from '@/types'
 
 interface StreakCalendarProps {
-  goals: Goal[]
-  currentDate: Date
+  dates?: Date[]
+  currentDate?: Date
 }
 
-export function StreakCalendar({ goals, currentDate }: StreakCalendarProps) {
+export function StreakCalendar({ dates = [], currentDate = new Date() }: StreakCalendarProps) {
   const calendar = useMemo(() => {
     const today = new Date(currentDate)
     const days = []
@@ -15,26 +14,22 @@ export function StreakCalendar({ goals, currentDate }: StreakCalendarProps) {
       const date = new Date(today)
       date.setDate(today.getDate() - i)
       
-      // Count completed milestones for this day
-      const completedMilestones = goals.reduce((count, goal) => {
-        return count + goal.milestones.filter(m => {
-          const milestoneDate = new Date(m.dueDate)
-          return m.completed && 
-            milestoneDate.getDate() === date.getDate() &&
-            milestoneDate.getMonth() === date.getMonth() &&
-            milestoneDate.getFullYear() === date.getFullYear()
-        }).length
-      }, 0)
+      // Count completed activities for this day
+      const completedCount = dates.filter(d => 
+        d.getDate() === date.getDate() &&
+        d.getMonth() === date.getMonth() &&
+        d.getFullYear() === date.getFullYear()
+      ).length
 
       days.push({
         date,
-        count: completedMilestones
+        count: completedCount
       })
     }
     return days
-  }, [goals, currentDate])
+  }, [dates, currentDate])
 
-  const maxCount = Math.max(...calendar.map(day => day.count))
+  const maxCount = Math.max(...calendar.map(day => day.count), 1) // Ensure we don't divide by zero
 
   return (
     <div className="flex items-end gap-1 h-24">
@@ -58,7 +53,7 @@ export function StreakCalendar({ goals, currentDate }: StreakCalendarProps) {
                     ? 'bg-primary-400'
                     : 'bg-gray-200'
               }`}
-              title={`${day.count} milestone${day.count !== 1 ? 's' : ''} completed`}
+              title={`${day.count} completion${day.count !== 1 ? 's' : ''}`}
             />
             <span className="text-xs text-gray-500">
               {day.date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 2)}

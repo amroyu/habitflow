@@ -1,16 +1,31 @@
-import { DashboardLayout } from '@/components/dashboard/layout'
+'use client'
+
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { mockGoals } from '@/lib/mock-data'
-import { notFound } from 'next/navigation'
 
 export default function GoalPage({ params }: { params: { id: string } }) {
   const goal = mockGoals.find(g => g.id === params.id)
 
   if (!goal) {
-    notFound()
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Goal not found</h1>
+          <p className="text-muted-foreground">The goal you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <DashboardLayout>
+    <div className="container mx-auto py-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">{goal.title}</h1>
+        <p className="text-muted-foreground">{goal.description}</p>
+      </div>
+
       <div className="p-6 max-w-4xl">
         <header className="mb-8">
           <div className="flex items-center gap-4 mb-4">
@@ -85,6 +100,6 @@ export default function GoalPage({ params }: { params: { id: string } }) {
           </div>
         </section>
       </div>
-    </DashboardLayout>
+    </div>
   )
 }

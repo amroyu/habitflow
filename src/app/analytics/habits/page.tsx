@@ -1,6 +1,6 @@
 'use client';
 
-import { DashboardLayout } from '@/components/dashboard/layout';
+import { useState } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { HabitsOverviewChart } from '@/components/analytics/habits-overview-chart';
@@ -35,85 +35,83 @@ const mockHabitsData = {
 
 const HabitsAnalyticsPage = () => {
   return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <PageHeader
-            heading="Habits Analytics"
-            subheading="Track your habits progress and performance"
-          />
-          <Link href="/habits">
-            <Button variant="outline">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Habits
-            </Button>
-          </Link>
-        </div>
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-8">
+        <PageHeader
+          heading="Habits Analytics"
+          subheading="Track your habits progress and performance"
+        />
+        <Link href="/habits">
+          <Button variant="outline">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Habits
+          </Button>
+        </Link>
+      </div>
 
-        <div className="grid gap-6 md:grid-cols-3 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Habits</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{mockHabitsData.totalHabits}</div>
-              <p className="text-muted-foreground">
-                {mockHabitsData.goodHabits} good, {mockHabitsData.badHabits} bad
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Average Streak</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{mockHabitsData.averageStreak}</div>
-              <p className="text-muted-foreground">days per habit</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Completion Rate</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{mockHabitsData.completionRate}%</div>
-              <p className="text-muted-foreground">last 7 days</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Habits Overview</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <HabitsOverviewChart data={mockHabitsData} />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Completion History</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <HabitsCompletionRate data={mockHabitsData.completionHistory} />
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid gap-6 md:grid-cols-3 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Habits</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{mockHabitsData.totalHabits}</div>
+            <p className="text-muted-foreground">
+              {mockHabitsData.goodHabits} good, {mockHabitsData.badHabits} bad
+            </p>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Current Streaks</CardTitle>
+            <CardTitle>Average Streak</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            <HabitsStreakChart data={mockHabitsData.streakData} />
+          <CardContent>
+            <div className="text-3xl font-bold">{mockHabitsData.averageStreak}</div>
+            <p className="text-muted-foreground">days per habit</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Completion Rate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{mockHabitsData.completionRate}%</div>
+            <p className="text-muted-foreground">last 7 days</p>
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Habits Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <HabitsOverviewChart data={mockHabitsData} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Completion History</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <HabitsCompletionRate data={mockHabitsData.completionHistory} />
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Streaks</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[300px]">
+          <HabitsStreakChart data={mockHabitsData.streakData} />
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

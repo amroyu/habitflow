@@ -1,8 +1,16 @@
-import { DashboardLayout } from '@/components/dashboard/layout'
+'use client'
+
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 export default function ProfilePage() {
   return (
-    <DashboardLayout>
+    <div className="container mx-auto py-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Profile</h1>
+        <p className="text-muted-foreground">Manage your account settings and preferences</p>
+      </div>
+
       <div className="p-6 max-w-2xl">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile</h1>
@@ -64,6 +72,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   )
 }

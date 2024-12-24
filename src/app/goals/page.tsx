@@ -1,8 +1,7 @@
 'use client'
 
-import { DashboardLayout } from '@/components/dashboard/layout'
-import Link from 'next/link'
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { Goal, GoalType } from '@/types'
 import { GoalForm } from '@/components/goals/goal-form'
 import { 
@@ -213,100 +212,102 @@ export default function GoalsPage() {
   }
 
   return (
-    <DashboardLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Goals</h1>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowCompareForm(true)}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Compare Goals
-            </button>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              Create Goal
-            </button>
-          </div>
+    <div className="container mx-auto py-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Goals</h1>
+        <p className="text-muted-foreground">Track and manage your goals</p>
+      </div>
+
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Goals</h1>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowCompareForm(true)}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Compare Goals
+          </button>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Create Goal
+          </button>
         </div>
+      </div>
 
-        {/* Filters */}
-        <GoalFilters
-          onFilterChange={handleFilterChange}
-          onSortChange={handleSortChange}
-          categories={categories}
-          currentFilters={filters}
-          currentSort={sort}
-        />
+      {/* Filters */}
+      <GoalFilters
+        onFilterChange={handleFilterChange}
+        onSortChange={handleSortChange}
+        categories={categories}
+        currentFilters={filters}
+        currentSort={sort}
+      />
 
-        {/* Goals Grid */}
-        <div className="grid grid-cols-1 gap-6">
-          {filteredGoals.length === 0 ? (
-            <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+      {/* Goals Grid */}
+      <div className="grid grid-cols-1 gap-6">
+        {filteredGoals.length === 0 ? (
+          <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No goals found</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Try adjusting your filters or create a new goal to get started.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                Create New Goal
+              </button>
+            </div>
+          </div>
+        ) : (
+          filteredGoals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onUpdateGoal={handleUpdateGoal}
+            />
+          ))
+        )}
+      </div>
+
+      <div className="space-y-4">
+        {selectedGoal && (
+          <>
+            <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
+              <div className="px-4 py-5 sm:px-6">
+                <h3 className="text-lg font-medium leading-6 text-gray-900">
+                  {selectedGoal.title}
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {selectedGoal.description}
+                </p>
+              </div>
+              <div className="px-4 py-5 sm:p-6">
+                <DailyEntries
+                  goal={selectedGoal}
+                  onUpdateGoal={handleUpdateGoal}
                 />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No goals found</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Try adjusting your filters or create a new goal to get started.
-              </p>
-              <div className="mt-6">
-                <button
-                  onClick={() => setShowCreateForm(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Create New Goal
-                </button>
               </div>
             </div>
-          ) : (
-            filteredGoals.map((goal) => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                onUpdateGoal={handleUpdateGoal}
-              />
-            ))
-          )}
-        </div>
-
-        <div className="space-y-4">
-          {selectedGoal && (
-            <>
-              <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-lg font-medium leading-6 text-gray-900">
-                    {selectedGoal.title}
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {selectedGoal.description}
-                  </p>
-                </div>
-                <div className="px-4 py-5 sm:p-6">
-                  <DailyEntries
-                    goal={selectedGoal}
-                    onUpdateGoal={handleUpdateGoal}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
+          </>
+        )}
       </div>
 
       <GoalForm
@@ -323,6 +324,6 @@ export default function GoalsPage() {
         onClose={() => setShowCompareForm(false)}
         goals={goals}
       />
-    </DashboardLayout>
+    </div>
   )
 }

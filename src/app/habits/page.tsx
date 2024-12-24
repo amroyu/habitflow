@@ -1,6 +1,5 @@
 'use client';
 
-import { DashboardLayout } from '@/components/dashboard/layout'
 import { PageHeader } from '@/components/page-header'
 import HabitList, { Habit } from '@/components/habits/habit-list'
 import { Button } from '@/components/ui/button'
@@ -22,35 +21,33 @@ export default function HabitsPage() {
       type: habitData.type!,
       streak: 0,
       progress: 0,
-      lastCompleted: null,
+      lastCompleted: new Date(0),
     };
     setHabits(currentHabits => [...currentHabits, newHabit]);
     setIsFormOpen(false);
   };
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <PageHeader
-            heading="Habits"
-            subheading="Track and manage your daily habits"
-          />
-          <div className="flex items-center gap-4">
-            <Link href="/analytics/habits">
-              <Button variant="outline">
-                View Analytics
-              </Button>
-            </Link>
-            <Button onClick={() => setIsFormOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Habit
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-8">
+        <PageHeader
+          heading="Habits"
+          subheading="Track and manage your daily habits"
+        />
+        <div className="flex items-center gap-4">
+          <Link href="/analytics/habits">
+            <Button variant="outline">
+              View Analytics
             </Button>
-          </div>
+          </Link>
+          <Button onClick={() => setIsFormOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Habit
+          </Button>
         </div>
-        <div className="grid gap-6">
-          <HabitList habits={habits} onAddHabit={(habit) => setHabits(current => [...current, habit])} />
-        </div>
+      </div>
+      <div className="grid gap-6">
+        <HabitList habits={habits} onAddHabit={(habit) => setHabits(current => [...current, habit])} />
       </div>
 
       <HabitForm
@@ -58,6 +55,6 @@ export default function HabitsPage() {
         onClose={() => setIsFormOpen(false)}
         onSave={handleSaveHabit}
       />
-    </DashboardLayout>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Goal } from '@/types'
+import { Goal, RoadMapTemplate } from '@/types'
 
 const today = new Date().toISOString().split('T')[0]
 
@@ -92,5 +92,80 @@ export const mockGoals: Goal[] = [
         completed: false
       }
     ]
+  }
+]
+
+export const mockRoadMapTemplates: RoadMapTemplate[] = [
+  {
+    id: '1',
+    name: 'Fitness Journey',
+    description: 'A comprehensive roadmap for improving physical fitness',
+    category: 'Health',
+    title: 'Get Fit in 90 Days',
+    finalTarget: 'Achieve optimal fitness level',
+    status: 'not_started',
+    progress: 0,
+    milestones: [
+      {
+        id: '1',
+        title: 'Establish Workout Routine',
+        description: 'Create and stick to a basic workout schedule',
+        type: 'habit',
+        referenceId: '1',
+        order: 0,
+        status: 'not_started',
+        progress: 0,
+        dependsOn: []
+      },
+      {
+        id: '2',
+        title: 'Nutrition Plan',
+        description: 'Develop and follow a balanced nutrition plan',
+        type: 'habit',
+        referenceId: '2',
+        order: 1,
+        status: 'not_started',
+        progress: 0,
+        dependsOn: ['1']
+      }
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: '2',
+    name: 'Learning Programming',
+    description: 'Step-by-step guide to becoming a proficient programmer',
+    category: 'Education',
+    title: 'Master Programming in 6 Months',
+    finalTarget: 'Build a full-stack application',
+    status: 'not_started',
+    progress: 0,
+    milestones: [
+      {
+        id: '1',
+        title: 'Learn Basic Syntax',
+        description: 'Master fundamental programming concepts',
+        type: 'goal',
+        referenceId: '1',
+        order: 0,
+        status: 'not_started',
+        progress: 0,
+        dependsOn: []
+      },
+      {
+        id: '2',
+        title: 'Daily Coding Practice',
+        description: 'Code for at least 1 hour every day',
+        type: 'habit',
+        referenceId: '3',
+        order: 1,
+        status: 'not_started',
+        progress: 0,
+        dependsOn: ['1']
+      }
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   }
 ]

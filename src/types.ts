@@ -77,6 +77,27 @@ export interface Goal {
   completedAt?: string
 }
 
+export type HabitType = 'good' | 'bad'
+
+export interface HabitCategory {
+  id: string
+  name: string
+  type: HabitType
+  color?: string
+}
+
+export interface Habit {
+  id: string
+  title: string
+  description: string
+  type: HabitType
+  category: string
+  frequency: string
+  streak: number
+  progress: number
+  lastCompleted: Date
+}
+
 export interface User {
   id: string
   email: string
@@ -90,4 +111,38 @@ export interface AuthState {
   user: User | null
   loading: boolean
   error: string | null
+}
+
+export interface RoadMap {
+  id: string
+  title: string
+  description: string
+  targetDate: string
+  finalTarget: string
+  createdAt: string
+  updatedAt: string
+  milestones: RoadMapMilestone[]
+  status: 'not_started' | 'in_progress' | 'completed'
+  progress: number
+}
+
+export interface RoadMapMilestone {
+  id: string
+  title: string
+  description: string
+  type: 'goal' | 'habit'
+  referenceId: string // ID of the goal or habit
+  order: number
+  dependsOn?: string[] // IDs of milestones that must be completed before this one
+  status: 'not_started' | 'in_progress' | 'completed'
+  progress: number
+}
+
+export interface RoadMapTemplate extends Omit<RoadMap, 'id' | 'createdAt' | 'updatedAt'> {
+  id: string
+  name: string
+  description: string
+  category: string
+  createdAt: string
+  updatedAt: string
 }

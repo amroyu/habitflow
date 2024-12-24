@@ -1,13 +1,15 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import Navbar from '@/components/layout/navbar'
 import { ThemeProvider } from '@/components/theme-provider'
+import { RewardsProvider } from '@/context/rewards-context'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'HabitFlow - Track Your Goals & Break Bad Habits',
-  description: 'Track your goals, break bad habits, and achieve your dreams with HabitFlow - your personal habit tracking companion.',
+  title: 'HabitFlow',
+  description: 'Track your habits and achieve your goals',
 }
 
 export default function RootLayout({
@@ -17,15 +19,22 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+      <body className={inter.className}>
+        <RewardsProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <div className="flex min-h-screen flex-col">
+              <Navbar />
+              <main className="flex-1 pt-16">
+                {children}
+              </main>
+            </div>
+          </ThemeProvider>
+        </RewardsProvider>
       </body>
     </html>
   )

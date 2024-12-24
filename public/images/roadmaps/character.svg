@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .figure { fill: #4A5568; }
+    .hijab { fill: #718096; }
+    .heart { fill: #E53E3E; }
+    .bg { fill: #EDF2F7; }
+  </style>
+  
+  <!-- Background -->
+  <rect class="bg" x="0" y="0" width="400" height="400" rx="20"/>
+  
+  <!-- Heart Symbol -->
+  <path class="heart" d="M200 250 L180 230 Q150 200 180 170 Q200 150 200 170 Q200 150 220 170 Q250 200 220 230 Z"/>
+  
+  <!-- Two People with Hijab -->
+  <g transform="translate(-50,0)">
+    <circle class="figure" cx="200" cy="100" r="25"/> <!-- Head -->
+    <path class="hijab" d="M175 100 Q200 90 225 100 L235 150 Q200 140 165 150 Z"/> <!-- Hijab -->
+    <path class="figure" d="M185 130 L215 130 L225 200 L175 200 Z"/> <!-- Body -->
+  </g>
+  <g transform="translate(50,0)">
+    <circle class="figure" cx="200" cy="100" r="25"/> <!-- Head -->
+    <path class="hijab" d="M175 100 Q200 90 225 100 L235 150 Q200 140 165 150 Z"/> <!-- Hijab -->
+    <path class="figure" d="M185 130 L215 130 L225 200 L175 200 Z"/> <!-- Body -->
+  </g>
+</svg>
