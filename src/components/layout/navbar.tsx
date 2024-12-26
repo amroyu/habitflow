@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import {
   LayoutDashboard,
@@ -50,34 +51,52 @@ const navItems = [
 export default function Navbar() {
   return (
     <nav className="border-b bg-background">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-16 items-center justify-between px-4">
         {/* Left section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="text-primary">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="h-8 w-8"
-              >
-                <path d="M11.584 2.376a.75.75 0 01.832 0l9 6a.75.75 0 11-.832 1.248L12 3.901 3.416 9.624a.75.75 0 01-.832-1.248l9-6z" />
-                <path
-                  fillRule="evenodd"
-                  d="M20.25 10.332v9.918H21a.75.75 0 010 1.5H3a.75.75 0 010-1.5h.75v-9.918a.75.75 0 01.634-.74A49.109 49.109 0 0112 9c2.59 0 5.134.202 7.616.592a.75.75 0 01.634.74zm-7.5 2.418a.75.75 0 00-1.5 0v6.75a.75.75 0 001.5 0v-6.75zm3-.75a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0v-6.75a.75.75 0 01.75-.75zM9 12.75a.75.75 0 00-1.5 0v6.75a.75.75 0 001.5 0v-6.75z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <span className="text-xl font-bold">HabitFlow</span>
+            {/* Icon */}
+            <Image
+              src="/logos/icon-light.svg"
+              alt="HabitFlow Icon"
+              width={32}
+              height={32}
+              priority
+              className="dark:hidden"
+            />
+            <Image
+              src="/logos/icon-dark.svg"
+              alt="HabitFlow Icon"
+              width={32}
+              height={32}
+              priority
+              className="hidden dark:block"
+            />
+            {/* Text */}
+            <Image
+              src="/logos/text-light.svg"
+              alt="HabitFlow"
+              width={120}
+              height={24}
+              priority
+              className="dark:hidden"
+            />
+            <Image
+              src="/logos/text-dark.svg"
+              alt="HabitFlow"
+              width={120}
+              height={24}
+              priority
+              className="hidden dark:block"
+            />
           </Link>
-          <Button variant="default" className="bg-primary text-white gap-2">
-            <span className="hidden sm:inline">Quick Actions</span>
+          <Button variant="default" size="sm" className="bg-primary/90 hover:bg-primary text-white gap-2">
+            <span>Quick Actions</span>
           </Button>
         </div>
 
         {/* Center section */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -91,26 +110,31 @@ export default function Navbar() {
         </div>
 
         {/* Right section */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="hover:bg-primary/10">
             <Search className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="hover:bg-primary/10">
             <Moon className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="hover:bg-primary/10">
             <HelpCircle className="h-5 w-5" />
           </Button>
-          <Button variant="ghost" size="icon" className="relative">
+          <Button variant="ghost" size="icon" className="hover:bg-primary/10">
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="hover:bg-primary/10">
             <Settings className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-4">
-            <Button variant="outline">Sign in</Button>
-            <Button>Get Started</Button>
+          <div className="flex items-center gap-3 ml-2 pl-2 border-l">
+            <Link href="/login">
+              <Button variant="ghost" className="font-medium">
+                Sign in
+              </Button>
+            </Link>
+            <Button variant="default" className="bg-primary/90 hover:bg-primary font-medium">
+              Get Started
+            </Button>
           </div>
         </div>
       </div>
