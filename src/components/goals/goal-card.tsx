@@ -299,29 +299,27 @@ export function GoalCard({ goal, onUpdateGoal }: GoalCardProps) {
     checkAchievements()
   }
 
-  const calculateProgress = (milestones: Milestone[]): number => {
-    if (milestones.length === 0) return 0
-    const completedCount = milestones.filter(m => m.status === 'completed').length
-    return Math.round((completedCount / milestones.length) * 100)
+  const calculateProgress = () => {
+    const completedMilestones = goal.milestones.filter(m => m.completed).length
+    return (completedMilestones / goal.milestones.length) * 100
   }
 
   const handleMilestoneComplete = (milestoneIndex: number) => {
     const updatedMilestones = [...goal.milestones].map((milestone, index) => {
       if (index === milestoneIndex) {
-        const updatedMilestone: Milestone = {
+        return {
           ...milestone,
           status: 'completed' as const,
           progress: 100
-        }
-        return updatedMilestone
+        } as Milestone
       }
       return milestone
     })
 
-    const updatedGoal = {
+    const updatedGoal: Goal = {
       ...goal,
       milestones: updatedMilestones,
-      progress: calculateProgress(updatedMilestones),
+      progress: calculateProgress(),
       lastUpdated: new Date().toISOString()
     }
 
@@ -329,6 +327,21 @@ export function GoalCard({ goal, onUpdateGoal }: GoalCardProps) {
     addPoints(POINTS.COMPLETE_MILESTONE, 'Completed milestone: ' + updatedMilestones[milestoneIndex].title)
     checkAchievements()
   }
+
+  const handleDeleteGoal = () => {
+    if (confirm('Are you sure you want to delete this goal?')) {
+      const updatedGoal = {
+        ...goal,
+        isDeleted: true
+      }
+      onUpdateGoal(updatedGoal)
+    }
+  }
+
+  const handleEditGoal = () => {
+    // Navigate to edit page
+    window.location.href = `/goals/edit/${goal.id}`;
+  };
 
   return (
     <>
@@ -359,6 +372,22 @@ export function GoalCard({ goal, onUpdateGoal }: GoalCardProps) {
             <p className="text-sm text-gray-500 mt-1">{goal.description}</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleEditGoal}
+              className="hover:bg-gray-100"
+            >
+              <PencilIcon className="h-4 w-4 text-gray-500" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDeleteGoal}
+              className="hover:bg-gray-100"
+            >
+              <TrashIcon className="h-4 w-4 text-red-500" />
+            </Button>
             <button
               onClick={() => setIsEntryFormOpen(true)}
               className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"

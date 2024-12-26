@@ -3,10 +3,11 @@ export type MilestoneFrequency = 'daily' | 'weekly' | 'monthly'
 export interface Milestone {
   id: string
   title: string
-  description: string
-  status: 'not_started' | 'in_progress' | 'completed'
-  progress?: number
+  description?: string
   dueDate?: string
+  completed: boolean
+  status: 'pending' | 'in-progress' | 'completed'
+  progress?: number
   frequency?: MilestoneFrequency
 }
 
@@ -42,6 +43,7 @@ export interface Goal {
   progress: number
   status: 'not_started' | 'in_progress' | 'completed'
   lastUpdated?: string
+  deleted?: boolean
 }
 
 export interface Habit {
