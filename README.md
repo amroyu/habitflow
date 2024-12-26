@@ -2,30 +2,55 @@
 
 A modern habit tracking application built with Next.js, TypeScript, and Tailwind CSS. HabitFlow helps users build and maintain positive habits through an intuitive interface and gamification elements.
 
-![HabitFlow Banner](public/banner.png)
-
 ## Features
 
-- **Goal Setting & Tracking**: Set and track personal goals with customizable metrics
-- **Achievement System**: Earn badges and rewards for consistent habit completion
-- **Dark/Light Mode**: Seamless theme switching for comfortable viewing
-- **Responsive Design**: Works perfectly on both desktop and mobile devices
-- **Secure Authentication**: Protected routes and secure user data
-- **Real-time Updates**: Instant feedback on habit completion and progress
+- **User Authentication**:
+  - Email/Username & Password signup and login
+  - Profile picture upload during registration
+  - OAuth integration with Google and Twitter
+  - Secure password handling
+  
+- **Modern UI/UX**:
+  - Clean and intuitive interface
+  - Responsive design for all devices
+  - Dark/Light mode support
+  - Beautiful login/signup pages with background images
+  - Profile picture customization
+
+- **Coming Soon**:
+  - Goal Setting & Tracking
+  - Achievement System
+  - Real-time Updates
+  - Progress Analytics
+  - Social Features
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript
-- **Styling**: Tailwind CSS, Shadcn UI
-- **State Management**: React Context
-- **Authentication**: NextAuth.js
-- **Development**: ESLint, Prettier
+- **Frontend**: 
+  - Next.js 14 with App Router
+  - React 18
+  - TypeScript
+  - Tailwind CSS
+  
+- **UI Components**:
+  - Shadcn UI
+  - Radix UI Primitives
+  - Lucide Icons
+  
+- **Authentication**:
+  - NextAuth.js (planned)
+  - OAuth Providers
+  
+- **Development Tools**:
+  - ESLint
+  - Prettier
+  - Git
 
 ## Getting Started
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/habitflow.git
+   git clone https://github.com/amroyu/habitflow.git
    cd habitflow
    ```
 
@@ -53,15 +78,32 @@ A modern habit tracking application built with Next.js, TypeScript, and Tailwind
 habitflow/
 ├── src/
 │   ├── app/          # App router pages
-│   ├── components/   # React components
-│   │   ├── dashboard/
-│   │   ├── goals/
-│   │   └── ui/
+│   │   ├── login/    # Login page and layout
+│   │   └── signup/   # Signup page and layout
+│   ├── components/   
+│   │   ├── ui/       # Reusable UI components
+│   │   └── goals/    # Goal-related components
 │   ├── lib/          # Utility functions
 │   └── types/        # TypeScript types
-├── public/           # Static assets
-└── tailwind.config.js # Tailwind configuration
+├── public/           
+│   ├── logos/        # Logo variations
+│   └── assets/       # Images and icons
+└── tailwind.config.js
 ```
+
+## Current Status
+
+The project is in active development. Currently implemented:
+- Complete authentication UI
+- Profile picture upload functionality
+- Responsive layouts
+- Dark/Light mode support
+
+Next planned features:
+- Backend integration
+- Database setup
+- Goal tracking functionality
+- User dashboard
 
 ## Contributing
 
@@ -82,4 +124,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Next.js](https://nextjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Shadcn UI](https://ui.shadcn.com/)
-- [TypeScript](https://www.typescriptlang.org/)
+- [Radix UI](https://www.radix-ui.com/)
