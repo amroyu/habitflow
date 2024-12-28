@@ -33,14 +33,9 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Goals',
-    href: '/goals',
+    title: 'Tracker',
+    href: '/tracker',
     icon: Target,
-  },
-  {
-    title: 'Habits',
-    href: '/habits',
-    icon: BarChart2,
   },
   {
     title: 'Roadmap',

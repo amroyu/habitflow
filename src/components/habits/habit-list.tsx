@@ -17,6 +17,7 @@ const INITIAL_HABITS: Habit[] = [
     progress: 75,
     lastCompleted: new Date().toISOString(),
     completedCount: 0,
+    widgets: []
   },
   {
     id: 2,
@@ -28,6 +29,7 @@ const INITIAL_HABITS: Habit[] = [
     progress: 60,
     lastCompleted: new Date().toISOString(),
     completedCount: 0,
+    widgets: []
   },
   {
     id: 3,
@@ -39,6 +41,7 @@ const INITIAL_HABITS: Habit[] = [
     progress: 40,
     lastCompleted: new Date().toISOString(),
     completedCount: 0,
+    widgets: []
   },
   {
     id: 4,
@@ -50,6 +53,7 @@ const INITIAL_HABITS: Habit[] = [
     progress: 25,
     lastCompleted: new Date().toISOString(),
     completedCount: 0,
+    widgets: []
   }
 ];
 
@@ -63,44 +67,59 @@ export interface Habit {
   progress: number;
   lastCompleted: string;
   completedCount: number;
+  widgets: any[];
 }
 
 interface HabitListProps {
   habits?: Habit[];
   onAddHabit?: (habit: Habit) => void;
-  onUpdateHabit?: (habit: Habit) => void;
+  onUpdateHabit?: (habit: Habit[]) => void;
 }
 
 export default function HabitList({ habits = INITIAL_HABITS, onAddHabit, onUpdateHabit }: HabitListProps) {
   const { addPoints, checkAchievements } = useRewards()
 
-  const handleComplete = async (habit: Habit) => {
-    const updatedHabit: Habit = {
-      ...habit,
-      completedCount: (habit.completedCount || 0) + 1,
-      lastCompleted: new Date().toISOString(),
-    }
+  const handleComplete = async (id: number) => {
+    const habit = habits.find(h => h.id === id);
+    if (!habit) return;
+
+    const updatedHabits = habits.map(h => 
+      h.id === id 
+        ? { 
+            ...h, 
+            completedCount: (h.completedCount || 0) + 1,
+            lastCompleted: new Date().toISOString()
+          }
+        : h
+    );
 
     if (onUpdateHabit) {
-      onUpdateHabit(updatedHabit)
-      addPoints(POINTS.COMPLETE_HABIT, 'Completed habit: ' + habit.title)
-      checkAchievements()
+      onUpdateHabit(updatedHabits);
+      addPoints(POINTS.COMPLETE_HABIT, 'Completed habit: ' + habit.title);
+      checkAchievements();
     }
   }
 
+  const handleUpdateHabit = (id: number, widgets: any[]) => {
+    const updatedHabits = habits.map(h => 
+      h.id === id 
+        ? { ...h, widgets }
+        : h
+    );
+    
+    if (onUpdateHabit) {
+      onUpdateHabit(updatedHabits);
+    }
+  };
+
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {habits.map((habit) => (
         <HabitCard
           key={habit.id}
-          title={habit.title}
-          description={habit.description}
-          frequency={habit.frequency}
-          type={habit.type}
-          streak={habit.streak}
-          progress={habit.progress}
-          lastCompleted={habit.lastCompleted}
-          onComplete={() => handleComplete(habit)}
+          {...habit}
+          onComplete={() => handleComplete(habit.id)}
+          onUpdateHabit={handleUpdateHabit}
         />
       ))}
     </div>

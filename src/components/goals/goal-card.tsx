@@ -1,461 +1,436 @@
 'use client';
 
-import { useEffect, useState } from 'react'
-import { Goal, DailyEntry, Milestone, MilestoneFrequency } from '@/types'
-import { motion } from 'framer-motion'
-import { 
-  CalendarIcon, 
-  CheckCircleIcon, 
-  PlusIcon, 
-  PencilIcon, 
-  TrashIcon,
-  CheckIcon,
-  XCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon
-} from '@heroicons/react/20/solid'
-import Link from 'next/link'
-import { DailyEntryForm } from './daily-entry-form'
-import { ProgressVisualization } from './progress-visualization'
-import { format, formatDistanceToNow, isPast, startOfWeek, startOfDay, endOfDay, isWithinInterval, Interval, differenceInDays } from 'date-fns'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { useRewards } from '@/context/rewards-context'
-import { POINTS } from '@/types/rewards'
+import { useState } from 'react';
+import type { Goal, DailyEntry, Widget, WidgetType } from "@/types";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, Target, Plus, CheckCircle2, Edit2, Trash2, FileText, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { differenceInDays, format } from "date-fns";
+import { DailyEntryForm } from "./daily-entry-form";
+import { motion, AnimatePresence } from "framer-motion";
+import { StreakCounter } from "./streak-counter";
+import { Pomodoro } from '@/components/widgets/pomodoro';
+import { Counter } from '@/components/widgets/counter';
+import { Notes } from '@/components/widgets/notes';
+import { Checklist } from '@/components/widgets/checklist';
+import { ProgressChart } from '@/components/widgets/progress-chart';
+import { WidgetPicker } from '@/components/widgets/widget-picker';
 
 interface GoalCardProps {
-  goal: Goal
-  onUpdateGoal: (goal: Goal) => void
+  goal: Goal;
+  onUpdateGoal: (goal: Goal) => void;
+  onDeleteGoal?: (goalId: string) => void;
+  onEditGoal?: (goal: Goal) => void;
 }
 
-export function GoalCard({ goal, onUpdateGoal }: GoalCardProps) {
-  const { addPoints, checkAchievements } = useRewards()
-  const [isEntryFormOpen, setIsEntryFormOpen] = useState(false)
-  const [editingEntry, setEditingEntry] = useState<DailyEntry | null>(null)
-  const [isExpanded, setIsExpanded] = useState(false)
+export function GoalCard({ 
+  goal, 
+  onUpdateGoal, 
+  onDeleteGoal, 
+  onEditGoal,
+}: GoalCardProps) {
+  const [showEntryForm, setShowEntryForm] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showWidgetPicker, setShowWidgetPicker] = useState(false);
+  
+  const daysRemaining = differenceInDays(new Date(goal.endDate), new Date());
+  const progress = Math.min(Math.round((goal.entries?.length || 0) / goal.target * 100), 100);
+  const isCompleted = goal.status === 'completed';
 
-  const calculateTimeProgress = () => {
-    const now = new Date()
-    const startDate = new Date(goal.startDate)
-    const endDate = new Date(goal.endDate)
-    const totalDuration = differenceInDays(endDate, startDate)
-    const elapsed = differenceInDays(now, startDate)
-    return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100)
-  }
-
-  const timeProgress = calculateTimeProgress()
-  const daysRemaining = differenceInDays(new Date(goal.endDate), new Date())
-
-  const handleDeleteEntry = (entryId: string) => {
-    if (confirm('Are you sure you want to delete this entry?')) {
-      const updatedGoal = {
-        ...goal,
-        entries: goal.entries.filter(entry => entry.id !== entryId),
-        lastUpdated: new Date().toISOString()
-      }
-      onUpdateGoal(updatedGoal)
-    }
-  }
-
-  const handleEditEntry = (entry: DailyEntry) => {
-    setEditingEntry(entry)
-    setIsEntryFormOpen(true)
-  }
-
-  const handleSaveEntry = (entry: DailyEntry) => {
-    let updatedGoal: Goal
-    if (editingEntry) {
-      // Update existing entry
-      updatedGoal = {
-        ...goal,
-        entries: goal.entries.map(e => e.id === editingEntry.id ? entry : e),
-        lastUpdated: new Date().toISOString()
-      }
-    } else {
-      // Add new entry
-      updatedGoal = {
-        ...goal,
-        entries: [...(goal.entries || []), entry],
-        lastUpdated: new Date().toISOString()
-      }
-    }
-    onUpdateGoal(updatedGoal)
-    setIsEntryFormOpen(false)
-    setEditingEntry(null)
-  }
-
-  const handleToggleMilestone = (milestone: Milestone) => {
-    const now = new Date().toISOString()
-    let updatedMilestone: Milestone
-
-    if (milestone.frequency === 'one-time') {
-      // For one-time milestones, just toggle the completed state
-      updatedMilestone = {
-        ...milestone,
-        completed: !milestone.completed,
-        lastCompleted: !milestone.completed ? now : undefined
-      }
-    } else {
-      // For recurring milestones, check if it was completed within the current period
-      const lastCompleted = milestone.lastCompleted ? new Date(milestone.lastCompleted) : null
-      const isCompletedInCurrentPeriod = lastCompleted && isWithinCurrentPeriod(lastCompleted, milestone.frequency)
-
-      updatedMilestone = {
-        ...milestone,
-        completed: !isCompletedInCurrentPeriod,
-        lastCompleted: !isCompletedInCurrentPeriod ? now : undefined
-      }
-    }
-
-    const updatedGoal = {
+  const handleAddEntry = (entry: DailyEntry) => {
+    const updatedGoal: Goal = {
       ...goal,
-      milestones: goal.milestones.map(m => 
-        m.id === milestone.id ? updatedMilestone : m
-      ),
-      lastUpdated: now
-    }
-
-    onUpdateGoal(updatedGoal)
-  }
-
-  const isWithinCurrentPeriod = (date: Date, frequency: MilestoneFrequency): boolean => {
-    const now = new Date()
-    
-    switch (frequency) {
-      case 'daily':
-        return date.getDate() === now.getDate() &&
-               date.getMonth() === now.getMonth() &&
-               date.getFullYear() === now.getFullYear()
-      case 'weekly':
-        const weekStart = startOfWeek(now)
-        return date >= weekStart && date <= now
-      case 'monthly':
-        return date.getMonth() === now.getMonth() &&
-               date.getFullYear() === now.getFullYear()
-      case 'yearly':
-        return date.getFullYear() === now.getFullYear()
-      default:
-        return false
-    }
-  }
-
-  const formatTimeRemaining = () => {
-    const endDate = new Date(goal.endDate)
-    const now = new Date()
-    
-    const diff = endDate.getTime() - now.getTime()
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    if (days < 0) return 'Expired'
-    if (days === 0) return 'Last day'
-    return `${days} days left`
-  }
-
-  const renderEntryContent = (content: DailyEntry['contents'][0]) => {
-    switch (content.type) {
-      case 'text':
-        return <p className="text-sm text-gray-700">{content.data.text}</p>
-      case 'checklist':
-        return (
-          <div className="space-y-1">
-            {(content.data.items || []).map((item) => (
-              <div key={item.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={item.completed}
-                  onChange={(e) => {
-                    const updatedGoal = {
-                      ...goal,
-                      entries: goal.entries.map(entry => {
-                        if (entry.contents.some(c => c.data.items?.some(i => i.id === item.id))) {
-                          return {
-                            ...entry,
-                            contents: entry.contents.map(c => {
-                              if (c.type === 'checklist' && c.data.items?.some(i => i.id === item.id)) {
-                                return {
-                                  ...c,
-                                  data: {
-                                    ...c.data,
-                                    items: c.data.items.map(i => 
-                                      i.id === item.id ? { ...i, completed: e.target.checked } : i
-                                    )
-                                  }
-                                }
-                              }
-                              return c
-                            })
-                          }
-                        }
-                        return entry
-                      }),
-                      lastUpdated: new Date().toISOString()
-                    }
-                    onUpdateGoal(updatedGoal)
-                  }}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  disabled={false}
-                />
-                <span className={`text-sm ${item.completed ? 'text-gray-500 line-through' : 'text-gray-700'}`}>
-                  {item.text}
-                </span>
-              </div>
-            ))}
-          </div>
-        )
-      case 'link':
-        return (
-          <a
-            href={content.data.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-indigo-600 hover:text-indigo-500"
-          >
-            {content.data.url}
-          </a>
-        )
-      case 'file':
-        return (
-          <div className="flex items-center space-x-2">
-            <a
-              href={content.data.fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              {content.data.fileName}
-            </a>
-          </div>
-        )
-      default:
-        return null
-    }
-  }
-
-  const getTimeRemaining = (dueDate: string, frequency: MilestoneFrequency) => {
-    const now = new Date()
-    const due = new Date(dueDate)
-    
-    if (isPast(due)) {
-      return { text: 'Overdue', color: 'text-red-600' }
-    }
-
-    let interval: Interval
-    switch (frequency) {
-      case 'daily':
-        interval = {
-          start: startOfDay(now),
-          end: endOfDay(now)
-        }
-        break
-      case 'weekly':
-        const weekStart = startOfWeek(now)
-        interval = {
-          start: weekStart,
-          end: new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
-        }
-        break
-      case 'monthly':
-        interval = {
-          start: new Date(now.getFullYear(), now.getMonth(), 1),
-          end: new Date(now.getFullYear(), now.getMonth() + 1, 0)
-        }
-        break
-      case 'yearly':
-        interval = {
-          start: new Date(now.getFullYear(), 0, 1),
-          end: new Date(now.getFullYear(), 11, 31)
-        }
-        break
-      default:
-        // one-time
-        return {
-          text: formatDistanceToNow(due, { addSuffix: true }),
-          color: 'text-gray-500'
-        }
-    }
-
-    if (isWithinInterval(now, interval)) {
-      return {
-        text: `Due ${formatDistanceToNow(interval.end, { addSuffix: true })}`,
-        color: 'text-orange-500'
+      entries: [...(goal.entries || []), entry],
+      streak: {
+        currentStreak: (goal.streak?.currentStreak || 0) + 1,
+        longestStreak: Math.max((goal.streak?.longestStreak || 0), (goal.streak?.currentStreak || 0) + 1),
+        lastUpdated: new Date().toISOString()
       }
-    }
+    };
+    onUpdateGoal(updatedGoal);
+  };
 
-    return {
-      text: `Next ${frequency} period`,
-      color: 'text-gray-500'
-    }
-  }
-
-  const handleToggleCompletion = () => {
-    const updatedGoal = {
+  const handleMarkComplete = () => {
+    const updatedGoal: Goal = {
       ...goal,
-      completed: !goal.completed,
-      completedAt: !goal.completed ? new Date().toISOString() : undefined,
-      lastUpdated: new Date().toISOString()
-    }
-    onUpdateGoal(updatedGoal)
-    addPoints(POINTS.COMPLETE_GOAL, 'Completed goal: ' + goal.title)
-    checkAchievements()
-  }
+      status: 'completed' as const
+    };
+    onUpdateGoal(updatedGoal);
+  };
 
-  const calculateProgress = () => {
-    const completedMilestones = goal.milestones.filter(m => m.completed).length
-    return (completedMilestones / goal.milestones.length) * 100
-  }
+  const handleToggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
 
-  const handleMilestoneComplete = (milestoneIndex: number) => {
-    const updatedMilestones = [...goal.milestones].map((milestone, index) => {
-      if (index === milestoneIndex) {
-        return {
-          ...milestone,
-          status: 'completed' as const,
-          progress: 100
-        } as Milestone
-      }
-      return milestone
-    })
+  const handleAddWidget = (type: WidgetType) => {
+    const newWidget: Widget = {
+      id: Date.now(),
+      type,
+      settings: {}
+    };
 
     const updatedGoal: Goal = {
       ...goal,
-      milestones: updatedMilestones,
-      progress: calculateProgress(),
-      lastUpdated: new Date().toISOString()
+      widgets: [...(goal.widgets || []), newWidget]
+    };
+    
+    onUpdateGoal(updatedGoal);
+  };
+
+  const handleRemoveWidget = (widgetId: number) => {
+    const updatedGoal: Goal = {
+      ...goal,
+      widgets: (goal.widgets || []).filter((w: Widget) => w.id !== widgetId)
+    };
+    
+    onUpdateGoal(updatedGoal);
+  };
+
+  const renderWidget = (widget: Widget, index: number) => {
+    const commonProps = {
+      key: index,
+      onRemove: () => handleRemoveWidget(widget.id),
+      workDuration: widget.settings?.workDuration,
+      breakDuration: widget.settings?.breakDuration,
+      longBreakDuration: widget.settings?.longBreakDuration,
+      sessionsBeforeLongBreak: widget.settings?.sessionsBeforeLongBreak,
+      initialValue: widget.settings?.initialValue,
+      increment: widget.settings?.increment,
+      target: widget.settings?.target,
+      notes: widget.settings?.notes,
+      items: widget.settings?.items,
+      data: widget.settings?.data
+    };
+
+    switch (widget.type) {
+      case 'pomodoro':
+        return <Pomodoro {...commonProps} />;
+      case 'counter':
+        return <Counter {...commonProps} />;
+      case 'notes':
+        return <Notes {...commonProps} />;
+      case 'checklist':
+        return <Checklist {...commonProps} />;
+      case 'progress-chart':
+        return <ProgressChart {...commonProps} />;
+      default:
+        return null;
     }
-
-    onUpdateGoal(updatedGoal)
-    addPoints(POINTS.COMPLETE_MILESTONE, 'Completed milestone: ' + updatedMilestones[milestoneIndex].title)
-    checkAchievements()
-  }
-
-  const handleDeleteGoal = () => {
-    if (confirm('Are you sure you want to delete this goal?')) {
-      const updatedGoal = {
-        ...goal,
-        isDeleted: true
-      }
-      onUpdateGoal(updatedGoal)
-    }
-  }
-
-  const handleEditGoal = () => {
-    // Navigate to edit page
-    window.location.href = `/goals/edit/${goal.id}`;
   };
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        className="bg-white rounded-lg shadow-md p-6 mb-4"
+      <Card 
+        className={cn(
+          "relative overflow-hidden transition-all hover:shadow-lg cursor-pointer",
+          isCompleted && "bg-muted",
+          goal.type === 'do' && "border-l-4 border-l-green-500 dark:border-l-green-600",
+          goal.type === 'dont' && "border-l-4 border-l-red-500 dark:border-l-red-600",
+          goal.type === 'dont' && "bg-red-50/50 dark:bg-red-950/10",
+          goal.type === 'do' && "bg-green-50/50 dark:bg-green-950/10"
+        )}
+        onClick={handleToggleExpand}
       >
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex-1">
+        <CardHeader className="space-y-2 pb-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h3 className={cn(
+                  "font-semibold tracking-tight text-lg",
+                  goal.type === 'do' && "text-green-700 dark:text-green-400",
+                  goal.type === 'dont' && "text-red-700 dark:text-red-400"
+                )}>
+                  {goal.title}
+                </h3>
+                <span className={cn(
+                  "text-xs px-2 py-0.5 rounded-full font-medium",
+                  goal.type === 'do' && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+                  goal.type === 'dont' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                )}>
+                  {goal.type === 'do' ? 'Do' : "Don't"}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground line-clamp-2">{goal.description}</p>
+            </div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
-              <Button
-                variant={goal.completed ? "destructive" : "default"}
-                size="sm"
-                onClick={handleToggleCompletion}
-                className="ml-2"
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditGoal?.(goal);
+                }}
               >
-                {goal.completed ? (
-                  <XCircleIcon className="h-4 w-4 mr-1" />
-                ) : (
-                  <CheckIcon className="h-4 w-4 mr-1" />
-                )}
-                {goal.completed ? "Mark Incomplete" : "Mark Complete"}
+                <Edit2 className="h-4 w-4" />
               </Button>
-            </div>
-            <p className="text-sm text-gray-500 mt-1">{goal.description}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleEditGoal}
-              className="hover:bg-gray-100"
-            >
-              <PencilIcon className="h-4 w-4 text-gray-500" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDeleteGoal}
-              className="hover:bg-gray-100"
-            >
-              <TrashIcon className="h-4 w-4 text-red-500" />
-            </Button>
-            <button
-              onClick={() => setIsEntryFormOpen(true)}
-              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              <PlusIcon className="h-4 w-4 mr-1" />
-              Add Entry
-            </button>
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-            >
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8 text-destructive hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm('Are you sure you want to delete this goal?')) {
+                    onDeleteGoal?.(goal.id);
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
               {isExpanded ? (
-                <ChevronUpIcon className="h-5 w-5 text-gray-500" />
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
               ) : (
-                <ChevronDownIcon className="h-5 w-5 text-gray-500" />
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
               )}
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex flex-col space-y-1">
-              <span className="text-sm text-gray-500">Progress</span>
-              <div className="flex items-center space-x-2">
-                <Progress value={goal.progress} className="flex-1" />
-                <span className="text-sm font-medium">{goal.progress}%</span>
-              </div>
-            </div>
-            <div className="flex flex-col space-y-1">
-              <span className="text-sm text-gray-500">Time Elapsed</span>
-              <div className="flex items-center space-x-2">
-                <Progress 
-                  value={timeProgress} 
-                  className="flex-1 [&>div]:bg-amber-500" 
-                />
-                <span className="text-sm font-medium">{Math.round(timeProgress)}%</span>
-              </div>
-            </div>
-            <div className="flex flex-col space-y-1">
-              <span className="text-sm text-gray-500">Streak</span>
-              <div className="flex items-center space-x-2">
-                <CalendarIcon className="h-4 w-4 text-gray-400" />
-                <span className="text-sm font-medium">{goal.streak.currentStreak} days</span>
-              </div>
             </div>
           </div>
-
-          {isExpanded && (
-            <div className="space-y-6 pt-4">
-              <ProgressVisualization goal={goal} />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Progress Section */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center text-sm">
+              <span className={cn(
+                "text-muted-foreground",
+                goal.type === 'do' && "text-green-700 dark:text-green-400",
+                goal.type === 'dont' && "text-red-700 dark:text-red-400"
+              )}>Progress</span>
+              <span className={cn(
+                "font-medium",
+                goal.type === 'do' && "text-green-700 dark:text-green-400",
+                goal.type === 'dont' && "text-red-700 dark:text-red-400"
+              )}>{progress}%</span>
             </div>
-          )}
-        </div>
-      </motion.div>
+            <Progress 
+              value={progress} 
+              className={cn(
+                "h-2",
+                goal.type === 'do' && "[&>div]:bg-green-500 dark:[&>div]:bg-green-600",
+                goal.type === 'dont' && "[&>div]:bg-red-500 dark:[&>div]:bg-red-600"
+              )} 
+            />
+          </div>
 
-      {isEntryFormOpen && (
-        <DailyEntryForm
-          isOpen={isEntryFormOpen}
-          onClose={() => {
-            setIsEntryFormOpen(false)
-            setEditingEntry(null)
-          }}
-          goalId={goal.id}
-          onSave={handleSaveEntry}
-          initialData={editingEntry}
-        />
-      )}
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-4 pt-2">
+            <div className="space-y-1">
+              <div className="flex items-center text-muted-foreground text-sm">
+                <Target className="mr-1 h-4 w-4" />
+                Target
+              </div>
+              <p className="font-medium">{goal.target} entries</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center text-muted-foreground text-sm">
+                <Clock className="mr-1 h-4 w-4" />
+                Time Left
+              </div>
+              <p className="font-medium">{daysRemaining > 0 ? `${daysRemaining} days` : 'Expired'}</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center text-muted-foreground text-sm">
+                <Calendar className="mr-1 h-4 w-4" />
+                Streak
+              </div>
+              <p className="font-medium">{goal.streak?.currentStreak || 0} days</p>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-4 pt-4"
+              >
+                {/* Detailed Stats */}
+                <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
+                  <div>
+                    <span className="text-sm text-muted-foreground">Start Date</span>
+                    <p className="text-sm font-medium">
+                      {format(new Date(goal.startDate), 'PPP')}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">End Date</span>
+                    <p className="text-sm font-medium">
+                      {format(new Date(goal.endDate), 'PPP')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Milestones */}
+                {goal.milestones.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Milestones</h4>
+                    <div className="space-y-2">
+                      {goal.milestones.map((milestone) => (
+                        <div
+                          key={milestone.id}
+                          className="flex items-center justify-between p-3 bg-background rounded-lg border"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={milestone.completed}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                onUpdateGoal({
+                                  ...goal,
+                                  milestones: goal.milestones.map(m => 
+                                    m.id === milestone.id ? { ...m, completed: e.target.checked } : m
+                                  ),
+                                  progress: Math.round(
+                                    (goal.milestones.filter(m => m.completed).length / goal.milestones.length) * 100
+                                  ),
+                                  lastUpdated: new Date().toISOString()
+                                });
+                              }}
+                              className="h-4 w-4"
+                            />
+                            <div>
+                              <p className="text-sm font-medium">{milestone.title}</p>
+                              {milestone.dueDate && (
+                                <p className="text-xs text-muted-foreground">
+                                  Due {format(new Date(milestone.dueDate), 'PPP')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Widgets Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium">Widgets</h4>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowWidgetPicker(true);
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <WidgetPicker 
+                    open={showWidgetPicker}
+                    onOpenChange={setShowWidgetPicker}
+                    onSelectWidget={handleAddWidget}
+                  />
+                  {goal.widgets && goal.widgets.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {goal.widgets.map((widget, index) => (
+                        <div key={widget.id}>
+                          {renderWidget(widget, index)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No widgets added yet. Click "Add Widget" to get started.
+                    </p>
+                  )}
+                </div>
+
+                {/* Recent Entries */}
+                {goal.entries && goal.entries.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Recent Entries</h4>
+                    <div className="space-y-2">
+                      {goal.entries.slice(-5).map((entry) => (
+                        <div key={entry.id} className="bg-background p-3 rounded-lg border">
+                          <div className="flex justify-between items-start">
+                            <div className="text-sm">
+                              {entry.contents.map((content, i) => (
+                                <div key={i} className="mt-1">
+                                  {content.type === 'text' && content.data.text}
+                                  {content.type === 'checklist' && (
+                                    <div className="space-y-1">
+                                      {content.data.items?.map((item) => (
+                                        <div key={item.id} className="flex items-center space-x-2">
+                                          <input
+                                            type="checkbox"
+                                            checked={item.completed}
+                                            readOnly
+                                            className="h-4 w-4"
+                                          />
+                                          <span className={item.completed ? 'line-through text-muted-foreground' : ''}>
+                                            {item.text}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(entry.date), 'PP')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+        <CardFooter className="pt-4">
+          <div className="flex w-full gap-2">
+            <Button 
+              className={cn(
+                "flex-1",
+                goal.type === 'do' && "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700",
+                goal.type === 'dont' && "bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+              )}
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowEntryForm(true);
+              }}
+              disabled={isCompleted}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Add Entry
+            </Button>
+            <Button 
+              className={cn(
+                "flex-1",
+                isCompleted && "bg-green-600 hover:bg-green-700",
+                !isCompleted && goal.type === 'do' && "bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700",
+                !isCompleted && goal.type === 'dont' && "bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
+              )}
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMarkComplete();
+              }}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              {isCompleted ? "Mark In Progress" : "Mark Complete"}
+            </Button>
+          </div>
+        </CardFooter>
+      </Card>
+
+      <DailyEntryForm
+        isOpen={showEntryForm}
+        onClose={() => setShowEntryForm(false)}
+        goalId={goal.id}
+        onSave={handleAddEntry}
+      />
     </>
   );
 }

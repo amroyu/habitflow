@@ -4,6 +4,7 @@ import './globals.css'
 import Navbar from '@/components/layout/navbar'
 import { ThemeProvider } from '@/components/theme-provider'
 import { RewardsProvider } from '@/context/rewards-context'
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -33,6 +34,7 @@ export default function RootLayout({
                 {children}
               </main>
             </div>
+            <Toaster />
           </ThemeProvider>
         </RewardsProvider>
       </body>
