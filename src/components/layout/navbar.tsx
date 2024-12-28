@@ -18,6 +18,7 @@ import {
   Timer,
   TrendingUp,
   ChevronRight,
+  Map
 } from 'lucide-react'
 import {
   Popover,
@@ -40,7 +41,7 @@ const navItems = [
   {
     title: 'Roadmap',
     href: '/roadmap',
-    icon: null,
+    icon: Map,
   },
   {
     title: 'Analytics',
