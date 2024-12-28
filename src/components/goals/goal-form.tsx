@@ -570,9 +570,33 @@ export function GoalForm({ initialData, onSubmit }: GoalFormProps) {
   const [newCategoryGoals, setNewCategoryGoals] = useState<string[]>([]);
   const [newGoalInput, setNewGoalInput] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(formData as Goal);
+    const formData = new FormData(e.currentTarget);
+    
+    const goalData: Partial<Goal> = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      startDate: formData.get('startDate') as string,
+      endDate: formData.get('endDate') as string,
+      target: parseInt(formData.get('target') as string) || 0,
+      type: formData.get('type') as 'do' | 'dont',
+      category: formData.get('category') as string,
+      status: 'active',
+      progress: 0,
+      entries: [],
+      widgets: [],
+      milestones: []
+    };
+
+    if (initialData) {
+      onSubmit({ ...initialData, ...goalData } as Goal);
+    } else {
+      onSubmit({ 
+        id: Date.now(),
+        ...goalData
+      } as Goal);
+    }
   };
 
   const getCategories = () => {

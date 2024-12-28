@@ -107,12 +107,14 @@ export interface Goal {
   startDate: string;
   endDate: string;
   target: number;
+  status: 'active' | 'completed' | 'failed';
+  progress: number;
+  type?: 'do' | 'dont';
+  category?: string;
   entries?: DailyEntry[];
   streak?: Streak;
-  status: 'active' | 'completed' | 'failed';
   widgets?: Widget[];
   milestones?: Milestone[];
-  progress?: number;
 }
 
 export interface Habit {

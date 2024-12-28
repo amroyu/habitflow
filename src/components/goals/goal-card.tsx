@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Goal, DailyEntry, Widget, WidgetType } from "@/types";
+import { Goal, Widget, WidgetType } from '@/types';
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Target, Plus, CheckCircle2, Edit2, Trash2, FileText, ChevronDown, ChevronUp, X } from "lucide-react";
@@ -11,8 +11,8 @@ import { differenceInDays, format } from "date-fns";
 import { DailyEntryForm } from "./daily-entry-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { StreakCounter } from "./streak-counter";
-import { Pomodoro } from '@/components/widgets/pomodoro';
-import { Counter } from '@/components/widgets/counter';
+import { PomodoroWidget } from '@/components/widgets/pomodoro';
+import { CounterWidget } from '@/components/widgets/counter';
 import { Notes } from '@/components/widgets/notes';
 import { Checklist } from '@/components/widgets/checklist';
 import { ProgressChart } from '@/components/widgets/progress-chart';
@@ -20,16 +20,18 @@ import { WidgetPicker } from '@/components/widgets/widget-picker';
 
 interface GoalCardProps {
   goal: Goal;
-  onUpdateGoal: (goal: Goal) => void;
-  onDeleteGoal?: (goalId: string) => void;
-  onEditGoal?: (goal: Goal) => void;
+  onUpdate?: (updatedGoal: Goal) => void;
+  onDelete?: (goalId: number) => void;
+  onAddWidget?: (goalId: number, widget: Widget) => void;
+  onRemoveWidget?: (goalId: number, widgetId: number) => void;
 }
 
-export function GoalCard({ 
-  goal, 
-  onUpdateGoal, 
-  onDeleteGoal, 
-  onEditGoal,
+export function GoalCard({
+  goal,
+  onUpdate,
+  onDelete,
+  onAddWidget,
+  onRemoveWidget,
 }: GoalCardProps) {
   const [showEntryForm, setShowEntryForm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -39,7 +41,7 @@ export function GoalCard({
   const progress = Math.min(Math.round((goal.entries?.length || 0) / goal.target * 100), 100);
   const isCompleted = goal.status === 'completed';
 
-  const handleAddEntry = (entry: DailyEntry) => {
+  const handleAddEntry = (entry: any) => {
     const updatedGoal: Goal = {
       ...goal,
       entries: [...(goal.entries || []), entry],
@@ -49,7 +51,7 @@ export function GoalCard({
         lastUpdated: new Date().toISOString()
       }
     };
-    onUpdateGoal(updatedGoal);
+    onUpdate?.(updatedGoal);
   };
 
   const handleMarkComplete = () => {
@@ -57,7 +59,7 @@ export function GoalCard({
       ...goal,
       status: 'completed' as const
     };
-    onUpdateGoal(updatedGoal);
+    onUpdate?.(updatedGoal);
   };
 
   const handleToggleExpand = () => {
@@ -65,58 +67,54 @@ export function GoalCard({
   };
 
   const handleAddWidget = (type: WidgetType) => {
+    if (!onAddWidget) return
+
     const newWidget: Widget = {
-      id: Date.now(),
+      id: Number(Date.now()),
       type,
       settings: {}
-    };
+    }
 
-    const updatedGoal: Goal = {
-      ...goal,
-      widgets: [...(goal.widgets || []), newWidget]
-    };
-    
-    onUpdateGoal(updatedGoal);
+    onAddWidget(goal.id, newWidget)
   };
 
   const handleRemoveWidget = (widgetId: number) => {
-    const updatedGoal: Goal = {
-      ...goal,
-      widgets: (goal.widgets || []).filter((w: Widget) => w.id !== widgetId)
-    };
-    
-    onUpdateGoal(updatedGoal);
+    if (!onRemoveWidget) return
+    onRemoveWidget(goal.id, widgetId)
   };
 
   const renderWidget = (widget: Widget, index: number) => {
-    const commonProps = {
-      key: index,
-      onRemove: () => handleRemoveWidget(widget.id),
-      workDuration: widget.settings?.workDuration,
-      breakDuration: widget.settings?.breakDuration,
-      longBreakDuration: widget.settings?.longBreakDuration,
-      sessionsBeforeLongBreak: widget.settings?.sessionsBeforeLongBreak,
-      initialValue: widget.settings?.initialValue,
-      increment: widget.settings?.increment,
-      target: widget.settings?.target,
-      notes: widget.settings?.notes,
-      items: widget.settings?.items,
-      data: widget.settings?.data
-    };
-
     switch (widget.type) {
       case 'pomodoro':
-        return <Pomodoro {...commonProps} />;
+        return (
+          <div key={widget.id} className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2"
+              onClick={() => handleRemoveWidget(Number(widget.id))}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <PomodoroWidget settings={widget.settings} />
+          </div>
+        )
       case 'counter':
-        return <Counter {...commonProps} />;
-      case 'notes':
-        return <Notes {...commonProps} />;
-      case 'checklist':
-        return <Checklist {...commonProps} />;
-      case 'progress-chart':
-        return <ProgressChart {...commonProps} />;
+        return (
+          <div key={widget.id} className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2"
+              onClick={() => handleRemoveWidget(Number(widget.id))}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <CounterWidget settings={widget.settings} />
+          </div>
+        )
       default:
-        return null;
+        return null
     }
   };
 
@@ -161,7 +159,7 @@ export function GoalCard({
                 className="h-8 w-8"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEditGoal?.(goal);
+                  // onEditGoal?.(goal);
                 }}
               >
                 <Edit2 className="h-4 w-4" />
@@ -173,7 +171,7 @@ export function GoalCard({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (confirm('Are you sure you want to delete this goal?')) {
-                    onDeleteGoal?.(goal.id);
+                    onDelete?.(goal.id);
                   }
                 }}
               >
@@ -278,7 +276,7 @@ export function GoalCard({
                               checked={milestone.completed}
                               onChange={(e) => {
                                 e.stopPropagation();
-                                onUpdateGoal({
+                                onUpdate?.({
                                   ...goal,
                                   milestones: goal.milestones.map(m => 
                                     m.id === milestone.id ? { ...m, completed: e.target.checked } : m
@@ -327,19 +325,11 @@ export function GoalCard({
                     onOpenChange={setShowWidgetPicker}
                     onSelectWidget={handleAddWidget}
                   />
-                  {goal.widgets && goal.widgets.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {goal.widgets.map((widget, index) => (
-                        <div key={widget.id}>
-                          {renderWidget(widget, index)}
-                        </div>
-                      ))}
+                  {goal.widgets?.map((widget, index) => (
+                    <div key={widget.id} className="mb-4">
+                      {renderWidget(widget, index)}
                     </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No widgets added yet. Click "Add Widget" to get started.
-                    </p>
-                  )}
+                  ))}
                 </div>
 
                 {/* Recent Entries */}

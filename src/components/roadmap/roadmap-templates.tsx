@@ -9,6 +9,7 @@ import { RoadMapTemplate } from '@/types'
 import { roadmapTemplates } from '@/lib/roadmap-templates'
 import { roadmapImages } from '@/lib/roadmap-images'
 import { RoadMapForm } from '@/components/roadmap/roadmap-form'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 
 interface RoadMapTemplatesProps {
   onSelectTemplate: (template: RoadMapTemplate) => void
@@ -138,52 +139,56 @@ export function RoadMapTemplates({
       </ScrollArea>
 
       {/* Preview & Edit Modal */}
-      {previewTemplate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
-            <h2 className="text-xl font-bold mb-4">Preview & Edit Template</h2>
-            <RoadMapForm
-              initialData={previewTemplate}
-              onSubmit={(updatedTemplate) => {
-                onSelectTemplate(updatedTemplate)
-                setPreviewTemplate(null)
-              }}
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setPreviewTemplate(null)}>
-                Cancel
-              </Button>
-              <Button type="submit" form="roadmap-form">
-                Use Template
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={!!previewTemplate} onOpenChange={(open) => !open && setPreviewTemplate(null)}>
+        <DialogContent className="max-w-2xl">
+          <h2 className="text-xl font-bold mb-4">Preview & Edit Template</h2>
+          {previewTemplate && (
+            <>
+              <RoadMapForm
+                initialData={previewTemplate}
+                onSubmit={(updatedTemplate) => {
+                  onSelectTemplate(updatedTemplate)
+                  setPreviewTemplate(null)
+                }}
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setPreviewTemplate(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" form="roadmap-form">
+                  Use Template
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Template Modal */}
-      {editingTemplate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-full max-w-2xl">
-            <h2 className="text-xl font-bold mb-4">Edit Template</h2>
-            <RoadMapForm
-              initialData={editingTemplate}
-              onSubmit={(updatedTemplate) => {
-                onUpdateTemplate({ ...editingTemplate, ...updatedTemplate })
-                setEditingTemplate(null)
-              }}
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setEditingTemplate(null)}>
-                Cancel
-              </Button>
-              <Button type="submit" form="roadmap-form">
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={!!editingTemplate} onOpenChange={(open) => !open && setEditingTemplate(null)}>
+        <DialogContent className="max-w-2xl">
+          <h2 className="text-xl font-bold mb-4">Edit Template</h2>
+          {editingTemplate && (
+            <>
+              <RoadMapForm
+                initialData={editingTemplate}
+                onSubmit={(updatedTemplate) => {
+                  onUpdateTemplate({ ...editingTemplate, ...updatedTemplate })
+                  setEditingTemplate(null)
+                }}
+              />
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setEditingTemplate(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" form="roadmap-form">
+                  Save Changes
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
