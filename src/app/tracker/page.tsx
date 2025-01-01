@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Plus, Search, SlidersHorizontal } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { HabitForm } from "@/components/habits/habit-form";
 import { GoalForm } from "@/components/goals/goal-form";
 import { TrackerGrid } from "@/components/tracker/tracker-grid";
-import type { Habit, Goal } from "@/types";
+import type { Habit, Goal, Widget, Streak } from "@/types";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -18,21 +18,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function TrackerPage() {
-  const [habits, setHabits] = useState<Habit[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('habits');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return [];
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
   
-  const [goals, setGoals] = useState<Goal[]>(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('goals');
-      return saved ? JSON.parse(saved) : [];
+      const savedHabits = localStorage.getItem('habits');
+      const savedGoals = localStorage.getItem('goals');
+      setHabits(savedHabits ? JSON.parse(savedHabits) : []);
+      setGoals(savedGoals ? JSON.parse(savedGoals) : []);
+      setIsLoading(false);
     }
-    return [];
-  });
+  }, []);
 
   const [createType, setCreateType] = useState<"habit" | "goal" | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -43,13 +41,17 @@ export default function TrackerPage() {
 
   const handleSaveHabit = (habitData: Partial<Habit>) => {
     const newHabit: Habit = {
-      id: Date.now(),
-      title: habitData.title!,
+      id: String(Date.now()),
+      title: habitData.title || '',
       description: habitData.description || '',
-      frequency: habitData.frequency!,
+      frequency: habitData.frequency || 'daily',
       type: habitData.type || 'good',
-      category: habitData.category,
-      streak: 0,
+      category: habitData.category || '',
+      streak: {
+        currentStreak: 0,
+        longestStreak: 0,
+        lastUpdated: new Date().toISOString()
+      },
       progress: 0,
       completedCount: 0,
       startDate: new Date().toISOString(),
@@ -72,15 +74,18 @@ export default function TrackerPage() {
 
   const handleSaveGoal = (goalData: Partial<Goal>) => {
     const newGoal: Goal = {
-      id: Date.now(),
-      title: goalData.title!,
+      id: String(Date.now()),
+      title: goalData.title || '',
       description: goalData.description || '',
-      startDate: new Date().toISOString(),
-      endDate: goalData.endDate!,
-      target: goalData.target || 0,
+      targets: goalData.targets || [],
+      endDate: goalData.endDate || new Date().toISOString(),
+      type: goalData.type || 'do',
+      category: goalData.category || '',
       status: 'active',
+      progress: 0,
       entries: [],
       widgets: [],
+      milestones: []
     };
 
     setGoals(currentGoals => {
@@ -97,6 +102,70 @@ export default function TrackerPage() {
     });
   };
 
+  const handleUpdateHabit = (habit: Habit) => {
+    setHabits(currentHabits => {
+      const updated = currentHabits.map(h => h.id === habit.id ? habit : h);
+      localStorage.setItem('habits', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleUpdateGoal = (goal: Goal) => {
+    setGoals(currentGoals => {
+      const updated = currentGoals.map(g => g.id === goal.id ? goal : g);
+      localStorage.setItem('goals', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleAddWidget = (goalId: string, widget: Widget) => {
+    setGoals(currentGoals => {
+      const updated = currentGoals.map(goal => {
+        if (goal.id === goalId) {
+          return {
+            ...goal,
+            widgets: [...goal.widgets, widget]
+          };
+        }
+        return goal;
+      });
+      localStorage.setItem('goals', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleRemoveWidget = (goalId: string, widgetId: string) => {
+    setGoals(currentGoals => {
+      const updated = currentGoals.map(goal => {
+        if (goal.id === goalId) {
+          return {
+            ...goal,
+            widgets: goal.widgets.filter(w => w.id !== widgetId)
+          };
+        }
+        return goal;
+      });
+      localStorage.setItem('goals', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleDeleteHabit = (habitId: string) => {
+    setHabits(currentHabits => {
+      const updated = currentHabits.filter(habit => habit.id !== habitId);
+      localStorage.setItem('habits', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleDeleteGoal = (goalId: string) => {
+    setGoals(currentGoals => {
+      const updated = currentGoals.filter(goal => goal.id !== goalId);
+      localStorage.setItem('goals', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setCreateType(null);
@@ -108,20 +177,15 @@ export default function TrackerPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Tracker</h1>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+    <div className="container mx-auto py-8 space-y-8">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search habits and goals..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-[300px]"
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">
@@ -129,6 +193,12 @@ export default function TrackerPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setView("grid")}>
+                Grid View
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setView("list")}>
+                List View
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortBy("recent")}>
                 Sort by Recent
               </DropdownMenuItem>
@@ -140,12 +210,29 @@ export default function TrackerPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button onClick={handleOpenDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create New
-          </Button>
         </div>
+        <Button onClick={() => setIsDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Create New
+        </Button>
       </div>
+
+      <Suspense fallback={<div>Loading...</div>}>
+        {!isLoading && (
+          <TrackerGrid
+            habits={habits}
+            goals={goals}
+            searchQuery={searchQuery}
+            view={view}
+            sortBy={sortBy}
+            onUpdateHabit={handleUpdateHabit}
+            onUpdateGoal={handleUpdateGoal}
+            onDeleteHabit={handleDeleteHabit}
+            onDeleteGoal={handleDeleteGoal}
+            onAddWidget={handleAddWidget}
+            onRemoveWidget={handleRemoveWidget}
+          />
+        )}
+      </Suspense>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
@@ -184,14 +271,6 @@ export default function TrackerPage() {
           )}
         </DialogContent>
       </Dialog>
-
-      <TrackerGrid
-        habits={habits}
-        goals={goals}
-        searchQuery={searchQuery}
-        sortBy={sortBy}
-        view={view}
-      />
     </div>
   );
 }

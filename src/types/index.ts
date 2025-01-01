@@ -8,7 +8,7 @@ export interface Milestone {
   completed: boolean;
   status: 'pending' | 'in-progress' | 'completed';
   progress?: number;
-  frequency?: 'daily' | 'weekly' | 'monthly';
+  frequency?: MilestoneFrequency;
 }
 
 export interface RoadMap {
@@ -33,10 +33,19 @@ export interface RoadMapTemplate {
   milestones: Milestone[];
 }
 
-export interface Streak {
-  currentStreak: number;
-  longestStreak: number;
-  lastUpdated: string;
+export interface Target {
+  id: string;
+  value: number;
+  description: string;
+  unit: string;
+  completed: boolean;
+}
+
+export interface DailyEntry {
+  id: string;
+  date: string;
+  value: number;
+  notes?: string;
 }
 
 export interface ChecklistItem {
@@ -56,7 +65,7 @@ export interface EntryContent {
   };
 }
 
-export type WidgetType = 'pomodoro' | 'counter' | 'notes' | 'checklist' | 'progress-chart';
+export type WidgetType = 'pomodoro-timer' | 'counter' | 'notes' | 'checklist' | 'progress-chart';
 
 export interface WidgetSettings {
   // Pomodoro settings
@@ -75,7 +84,7 @@ export interface WidgetSettings {
 
   // Checklist settings
   items?: Array<{
-    id: number;
+    id: string;
     text: string;
     completed: boolean;
   }>;
@@ -88,46 +97,44 @@ export interface WidgetSettings {
 }
 
 export interface Widget {
-  id: number;
+  id: string;
   type: WidgetType;
   settings?: WidgetSettings;
 }
 
-export interface DailyEntry {
-  id: number;
-  date: string;
-  value: number;
-  notes?: string;
+export interface Streak {
+  currentStreak: number;
+  longestStreak: number;
+  lastUpdated: string;
 }
 
 export interface Goal {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  startDate: string;
+  targets: Target[];
   endDate: string;
-  target: number;
+  type: 'do' | 'dont';
+  category: string;
   status: 'active' | 'completed' | 'failed';
   progress: number;
-  type?: 'do' | 'dont';
-  category?: string;
-  entries?: DailyEntry[];
-  streak?: Streak;
-  widgets?: Widget[];
-  milestones?: Milestone[];
+  entries: DailyEntry[];
+  widgets: Widget[];
+  milestones: Milestone[];
 }
 
 export interface Habit {
-  id: number;
+  id: string;
   title: string;
   description: string;
   frequency: string;
   type: 'good' | 'bad';
-  streak: number;
+  streak: Streak;
   progress: number;
   lastCompleted?: string;
   startDate?: string;
   completedCount?: number;
   target?: number;
-  widgets?: Widget[];
+  widgets: Widget[];
+  category: string;
 }

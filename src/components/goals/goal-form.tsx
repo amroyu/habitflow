@@ -542,10 +542,11 @@ interface Target {
 
 interface GoalFormProps {
   initialData?: Goal;
-  onSubmit: (data: Goal) => void;
+  onSave: (data: Partial<Goal>) => void;
+  onClose: () => void;
 }
 
-export function GoalForm({ initialData, onSubmit }: GoalFormProps) {
+export function GoalForm({ initialData, onSave, onClose }: GoalFormProps) {
   const [formData, setFormData] = useState<FormData>({
     title: initialData?.title || '',
     description: initialData?.description || '',
@@ -572,31 +573,17 @@ export function GoalForm({ initialData, onSubmit }: GoalFormProps) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
     
     const goalData: Partial<Goal> = {
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      startDate: formData.get('startDate') as string,
-      endDate: formData.get('endDate') as string,
-      target: parseInt(formData.get('target') as string) || 0,
-      type: formData.get('type') as 'do' | 'dont',
-      category: formData.get('category') as string,
-      status: 'active',
-      progress: 0,
-      entries: [],
-      widgets: [],
-      milestones: []
+      title: formData.title,
+      description: formData.description,
+      targets: formData.targets,
+      endDate: formData.endDate,
+      type: formData.type,
+      category: formData.category
     };
 
-    if (initialData) {
-      onSubmit({ ...initialData, ...goalData } as Goal);
-    } else {
-      onSubmit({ 
-        id: Date.now(),
-        ...goalData
-      } as Goal);
-    }
+    onSave(goalData);
   };
 
   const getCategories = () => {
@@ -923,7 +910,7 @@ export function GoalForm({ initialData, onSubmit }: GoalFormProps) {
             type="button" 
             variant="outline" 
             className="flex-1" 
-            onClick={() => onSubmit(formData as Goal)}
+            onClick={onClose}
           >
             Cancel
           </Button>

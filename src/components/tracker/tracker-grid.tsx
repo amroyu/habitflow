@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HabitCard } from "@/components/habits/habit-card";
 import { GoalCard } from "@/components/goals/goal-card";
-import { mockHabits, mockGoals } from '@/lib/mock-data';
 import { Goal } from '@/types';
-import type { MockHabit } from '@/lib/mock-data';
+import type { Habit } from '@/types';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -13,15 +12,34 @@ interface TrackerGridProps {
   view?: "grid" | "list";
   sortBy?: "recent" | "progress" | "streak";
   searchQuery?: string;
+  habits: Habit[];
+  goals: Goal[];
+  onUpdateHabit?: (habit: Habit) => void;
+  onUpdateGoal?: (goal: Goal) => void;
+  onDeleteHabit?: (habitId: number) => void;
+  onDeleteGoal?: (goalId: number) => void;
+  onAddWidget?: (goalId: number, widget: any) => void;
+  onRemoveWidget?: (goalId: number, widgetId: number) => void;
 }
 
 export function TrackerGrid({ 
   view = "grid",
   sortBy = "recent",
-  searchQuery = ""
+  searchQuery = "",
+  habits,
+  goals,
+  onUpdateHabit,
+  onUpdateGoal,
+  onDeleteHabit,
+  onDeleteGoal,
+  onAddWidget,
+  onRemoveWidget
 }: TrackerGridProps) {
-  const [habits] = useState<MockHabit[]>(mockHabits);
-  const [goals] = useState<Goal[]>(mockGoals);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Filter items based on search query
   const filteredHabits = habits.filter(habit => 
@@ -59,6 +77,10 @@ export function TrackerGrid({
     }
   });
 
+  if (!mounted) {
+    return null;
+  }
+
   return (
     <div className="space-y-10">
       {/* Habits Section */}
@@ -69,28 +91,13 @@ export function TrackerGrid({
             {sortedHabits.length}
           </Badge>
         </div>
-        <div className={cn(
-          "grid gap-6",
-          view === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
-        )}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
           {sortedHabits.map((habit) => (
             <div key={habit.id} className="group">
               <div className="relative transition-all duration-200 hover:shadow-md">
-                <Badge 
-                  className="absolute -top-2 -right-2 z-10 shadow-sm" 
-                  variant={habit.type === 'good' ? 'default' : 'destructive'}
-                >
-                  {habit.type === 'good' ? 'Build' : 'Break'}
-                </Badge>
                 <HabitCard
-                  title={habit.title}
-                  description={habit.description || ""}
-                  frequency={habit.frequency}
-                  type={habit.type}
-                  streak={habit.streak}
-                  progress={habit.progress}
-                  lastCompleted={habit.lastCompleted}
-                  onComplete={() => {}}
+                  {...habit}
+                  onUpdateHabit={onUpdateHabit}
                 />
               </div>
             </div>
@@ -111,22 +118,16 @@ export function TrackerGrid({
             {sortedGoals.length}
           </Badge>
         </div>
-        <div className={cn(
-          "grid gap-6",
-          view === "grid" ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
-        )}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-4">
           {sortedGoals.map((goal) => (
             <div key={goal.id} className="group">
               <div className="relative transition-all duration-200 hover:shadow-md">
-                <Badge 
-                  className="absolute -top-2 -right-2 z-10 shadow-sm" 
-                  variant={goal.type === 'do' ? 'default' : 'destructive'}
-                >
-                  {goal.type === 'do' ? 'Achieve' : 'Avoid'}
-                </Badge>
                 <GoalCard
                   goal={goal}
-                  onUpdateGoal={() => {}}
+                  onUpdate={onUpdateGoal}
+                  onDelete={onDeleteGoal}
+                  onAddWidget={onAddWidget}
+                  onRemoveWidget={onRemoveWidget}
                 />
               </div>
             </div>

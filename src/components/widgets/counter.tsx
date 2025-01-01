@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Plus, Minus, RotateCcw } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import { Minus, Plus } from "lucide-react";
+import { WidgetBase } from "./widget-base";
 
 interface CounterProps {
   className?: string;
   initialValue?: number;
   increment?: number;
   target?: number;
+  onRemove?: () => void;
+  onEdit?: () => void;
 }
 
 export function Counter({
@@ -18,6 +21,8 @@ export function Counter({
   initialValue = 0,
   increment = 1,
   target,
+  onRemove,
+  onEdit,
 }: CounterProps) {
   const [value, setValue] = useState(initialValue);
 
@@ -36,54 +41,53 @@ export function Counter({
   };
 
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium">Counter</h3>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={handleReset}
-        >
-          <RotateCcw className="h-4 w-4" />
-        </Button>
-      </div>
-
+    <WidgetBase
+      title="Counter"
+      subtitle={target ? `Target: ${target}` : undefined}
+      onRemove={onRemove}
+      onReset={handleReset}
+      onEdit={onEdit}
+      className={className}
+    >
       <div className="flex items-center justify-between gap-4">
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-10 w-10 rounded-full border-2 hover:bg-primary/5"
           onClick={handleDecrement}
         >
           <Minus className="h-4 w-4" />
         </Button>
-        
-        <div className="text-center">
-          <span className="text-2xl font-bold">{value}</span>
-          {target && (
-            <p className="text-xs text-muted-foreground">
-              Target: {target}
-            </p>
-          )}
+
+        <div className="flex-1 text-center">
+          <span className="text-4xl font-semibold tabular-nums">
+            {value}
+          </span>
         </div>
 
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-10 w-10 rounded-full border-2 hover:bg-primary/5"
           onClick={handleIncrement}
         >
           <Plus className="h-4 w-4" />
         </Button>
       </div>
 
-      {target && (
-        <Progress 
-          value={progress} 
-          className="h-2"
-        />
+      {progress !== undefined && (
+        <div className="space-y-1.5">
+          <Progress
+            value={progress}
+            className="h-2"
+          />
+          <div className="flex justify-end">
+            <p className="text-xs text-muted-foreground">
+              {Math.round(progress)}% complete
+            </p>
+          </div>
+        </div>
       )}
-    </div>
+    </WidgetBase>
   );
 }

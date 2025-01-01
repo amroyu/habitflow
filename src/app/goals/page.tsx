@@ -211,6 +211,22 @@ export default function GoalsPage() {
     setSelectedGoal(updatedGoal)
   }
 
+  const handleUpdateWidget = (goalId: string, widgetId: string, settings: any) => {
+    setGoals(goals.map(goal => {
+      if (goal.id === goalId) {
+        return {
+          ...goal,
+          widgets: (goal.widgets || []).map(widget =>
+            widget.id === widgetId
+              ? { ...widget, settings }
+              : widget
+          )
+        };
+      }
+      return goal;
+    }));
+  };
+
   return (
     <div className="container mx-auto py-6">
       <div className="mb-8">
@@ -281,7 +297,8 @@ export default function GoalsPage() {
             <GoalCard
               key={goal.id}
               goal={goal}
-              onUpdateGoal={handleUpdateGoal}
+              onUpdate={handleUpdateGoal}
+              onUpdateWidget={handleUpdateWidget}
             />
           ))
         )}
