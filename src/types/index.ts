@@ -129,12 +129,33 @@ export interface Habit {
   description: string;
   frequency: string;
   type: 'good' | 'bad';
-  streak: Streak;
+  streak: {
+    currentStreak: number;
+    longestStreak: number;
+    lastUpdated: string;
+  };
   progress: number;
-  lastCompleted?: string;
-  startDate?: string;
-  completedCount?: number;
-  target?: number;
+  lastCompleted: string;
+  startDate: string;
+  completedCount: number;
+  target: number;
   widgets: Widget[];
   category: string;
+}
+
+export interface Resource {
+  id: string;
+  title: string;
+  description: string;
+  type: 'article' | 'video' | 'book' | 'tool' | 'course';
+  url: string;
+  author: string;
+  thumbnail?: string;
+  tags: string[];
+  likes: number;
+  saves: number;
+  dateAdded: string;
+  readTime?: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  isPremium: boolean;
 }

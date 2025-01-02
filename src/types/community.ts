@@ -291,25 +291,25 @@ export interface Mentor {
 }
 
 export interface ResourceHub {
-  id: string
-  title: string
-  type: 'article' | 'video' | 'guide' | 'template' | 'tool'
-  category: string
-  description: string
-  content: string
+  id: string;
+  title: string;
+  description: string;
+  type: 'article' | 'video' | 'book' | 'tool' | 'course';
+  url: string;
   author: {
-    id: string
-    name: string
-    avatar?: string
-    credentials?: string[]
-  }
-  likes: number
-  saves: number
-  views: number
-  tags: string[]
-  createdAt: string
-  estimatedReadTime?: number
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
+    id: string;
+    name: string;
+    avatar?: string;
+    credentials?: string[];
+  };
+  thumbnail?: string;
+  tags: string[];
+  likes: number;
+  saves: number;
+  dateAdded: string;
+  readTime?: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  isPremium: boolean;
 }
 
 export interface SocialFeatures {

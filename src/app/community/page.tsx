@@ -22,8 +22,16 @@ import {
 } from "lucide-react"
 import { NotificationsPanel } from "@/components/community/notifications-panel"
 import { DailyQuests } from "@/components/community/daily-quests"
-import { ResourceCard } from "@/components/community/resource-card"
-import { type Notification, type ResourceHub } from "@/types/community"
+import { ResourcesSection } from "@/components/community/resources-section"
+import { ActivityFeedSection } from "@/components/community/activity-feed-section"
+import { SuccessStoriesSection } from "@/components/community/success-stories-section"
+import { ChallengesSection } from "@/components/community/challenges-section"
+import { EventsSection } from "@/components/community/events-section"
+import { GroupsSection } from "@/components/community/groups-section"
+import { LeaderboardSection } from "@/components/community/leaderboard-section"
+import { AchievementsSection } from "@/components/community/achievements-section"
+import { type Notification } from "@/types/community"
+import { type ResourceHub } from "@/types/resources"
 
 const mockSuccessStories: any[] = [
   {
@@ -144,6 +152,114 @@ const dailyQuests = [
   // Add more quests...
 ]
 
+const mockResources: ResourceHub[] = [
+  {
+    id: "1",
+    title: "The Science of Habit Formation",
+    description: "Learn the psychological principles behind forming lasting habits and how to apply them in your daily life.",
+    type: "article",
+    url: "https://example.com/habit-formation",
+    author: {
+      id: "1",
+      name: "Dr. Sarah Chen",
+      avatar: "/avatars/sarah.jpg",
+      credentials: ["Ph.D. in Psychology", "Habit Formation Expert"]
+    },
+    thumbnail: "/thumbnails/habit-science.jpg",
+    tags: ["psychology", "habit-formation", "science", "behavior-change"],
+    likes: 342,
+    saves: 156,
+    dateAdded: "2024-12-20",
+    readTime: "8 min read",
+    difficulty: "intermediate",
+    isPremium: false
+  },
+  {
+    id: "2",
+    title: "Building a Morning Routine That Sticks",
+    description: "A comprehensive guide to creating and maintaining a productive morning routine.",
+    type: "video",
+    url: "https://example.com/morning-routine",
+    author: {
+      id: "2",
+      name: "Alex Thompson",
+      avatar: "/avatars/alex.jpg",
+      credentials: ["Certified Life Coach", "Productivity Expert"]
+    },
+    thumbnail: "/thumbnails/morning-routine.jpg",
+    tags: ["morning-routine", "productivity", "habits", "lifestyle"],
+    likes: 567,
+    saves: 289,
+    dateAdded: "2024-12-18",
+    readTime: "15 min watch",
+    difficulty: "beginner",
+    isPremium: false
+  },
+  {
+    id: "3",
+    title: "Advanced Habit Tracking Techniques",
+    description: "Master advanced methods for tracking and optimizing your habits using data and analytics.",
+    type: "course",
+    url: "https://example.com/habit-tracking",
+    author: {
+      id: "3",
+      name: "Michael Wright",
+      avatar: "/avatars/michael.jpg",
+      credentials: ["Data Scientist", "Behavioral Analyst"]
+    },
+    thumbnail: "/thumbnails/habit-tracking.jpg",
+    tags: ["habit-tracking", "data-analysis", "optimization", "advanced"],
+    likes: 234,
+    saves: 178,
+    dateAdded: "2024-12-15",
+    readTime: "4 hours course",
+    difficulty: "advanced",
+    isPremium: true
+  },
+  {
+    id: "4",
+    title: "Habit Stacking: Ultimate Guide",
+    description: "Learn how to combine multiple habits for maximum effectiveness and efficiency.",
+    type: "book",
+    url: "https://example.com/habit-stacking",
+    author: {
+      id: "4",
+      name: "Emma Davis",
+      avatar: "/avatars/emma.jpg",
+      credentials: ["Bestselling Author", "Behavioral Coach"]
+    },
+    thumbnail: "/thumbnails/habit-stacking.jpg",
+    tags: ["habit-stacking", "productivity", "efficiency", "lifestyle"],
+    likes: 789,
+    saves: 432,
+    dateAdded: "2024-12-10",
+    readTime: "6 hour read",
+    difficulty: "intermediate",
+    isPremium: false
+  },
+  {
+    id: "5",
+    title: "HabitFlow Pro Tools",
+    description: "A collection of premium tools and templates for advanced habit tracking and analysis.",
+    type: "tool",
+    url: "https://example.com/habitflow-pro",
+    author: {
+      id: "5",
+      name: "HabitFlow Team",
+      avatar: "/avatars/team.jpg",
+      credentials: ["Official Resource"]
+    },
+    thumbnail: "/thumbnails/habitflow-pro.jpg",
+    tags: ["tools", "templates", "tracking", "premium"],
+    likes: 456,
+    saves: 321,
+    dateAdded: "2024-12-05",
+    readTime: "Various tools",
+    difficulty: "intermediate",
+    isPremium: true
+  }
+];
+
 const resources: ResourceHub[] = [
   {
     id: "1",
@@ -215,29 +331,7 @@ export default function CommunityPage() {
       }
     ])
 
-    setResources([
-      {
-        id: "1",
-        title: "Building Lasting Habits: A Comprehensive Guide",
-        type: "article" as const,
-        category: "Habit Formation",
-        description: "Learn the science behind habit formation and practical strategies to build lasting habits.",
-        content: "...",
-        author: {
-          id: "author1",
-          name: "Jane Smith",
-          avatar: "/avatars/jane.png",
-          credentials: ["Certified Coach", "PhD in Psychology"]
-        },
-        likes: 245,
-        saves: 123,
-        views: 1502,
-        tags: ["habits", "productivity", "psychology"],
-        createdAt: new Date().toISOString(),
-        estimatedReadTime: 8,
-        difficulty: "beginner" as const
-      }
-    ])
+    setResources(mockResources)
 
     setStats({
       activeMembers: '2.4k',
@@ -324,45 +418,131 @@ export default function CommunityPage() {
 
             <div className="mt-6">
               <TabsContent value="feed" className="space-y-6">
-                {/* Feed content */}
+                <ActivityFeedSection activities={mockActivityFeed} />
               </TabsContent>
 
               <TabsContent value="success-stories" className="space-y-6">
-                {/* Success stories content */}
+                <SuccessStoriesSection stories={mockSuccessStories} />
               </TabsContent>
 
               <TabsContent value="challenges" className="space-y-6">
-                {/* Challenges content */}
+                <ChallengesSection challenges={[
+                  {
+                    id: '1',
+                    title: '30 Days of Morning Routine',
+                    description: 'Build a consistent morning routine for 30 days',
+                    startDate: '2024-01-01T00:00:00Z',
+                    endDate: '2024-01-30T23:59:59Z',
+                    participants: 245,
+                    type: 'individual',
+                    category: 'Habits',
+                    rewards: {
+                      points: 1000,
+                      badges: ['Early Bird', 'Consistency Master'],
+                      achievements: ['Morning Champion']
+                    },
+                    rules: [
+                      'Wake up before 7 AM',
+                      'Complete morning routine checklist',
+                      'Log your progress daily'
+                    ],
+                    leaderboard: [],
+                    status: 'active'
+                  }
+                ]} />
               </TabsContent>
 
               <TabsContent value="events" className="space-y-6">
-                {/* Events content */}
+                <EventsSection events={mockEvents} />
               </TabsContent>
 
               <TabsContent value="groups" className="space-y-6">
-                {/* Groups content */}
+                <GroupsSection groups={[
+                  {
+                    id: '1',
+                    name: 'Mindfulness Masters',
+                    description: 'A group dedicated to mindfulness and meditation practices',
+                    category: 'Wellness',
+                    members: 1234,
+                    isPrivate: false,
+                    tags: ['meditation', 'mindfulness', 'wellness'],
+                    activities: [],
+                    rules: [
+                      'Be respectful and supportive',
+                      'Share your experiences',
+                      'No promotional content'
+                    ],
+                    moderators: ['mod1', 'mod2'],
+                    createdAt: '2023-12-01T00:00:00Z'
+                  }
+                ]} />
               </TabsContent>
 
               <TabsContent value="leaderboard" className="space-y-6">
-                {/* Leaderboard content */}
+                <LeaderboardSection 
+                  entries={[
+                    {
+                      userId: '1',
+                      username: 'Sarah Chen',
+                      avatar: '/avatars/sarah.jpg',
+                      score: 1500,
+                      points: 15000,
+                      achievements: ['Early Bird', 'Streak Master', 'Productivity Pro'],
+                      level: 15
+                    },
+                    ...Array.from({ length: 338 }, (_, i) => ({
+                      userId: `user-${i + 2}`,
+                      username: `User ${i + 2}`,
+                      avatar: '/avatars/default.jpg',
+                      score: 15000 - (i * 30),
+                      points: 150000 - (i * 300),
+                      achievements: ['Achievement 1', 'Achievement 2'],
+                      level: Math.max(1, Math.floor((150000 - (i * 300)) / 10000))
+                    })),
+                    {
+                      userId: 'current-user',
+                      username: 'You',
+                      avatar: '/avatars/default.jpg',
+                      score: 1000,
+                      points: 10000,
+                      achievements: ['Getting Started', 'First Week'],
+                      level: 10
+                    }
+                  ]} 
+                  currentUserId="current-user"
+                />
               </TabsContent>
 
               <TabsContent value="achievements" className="space-y-6">
-                {/* Achievements content */}
+                <AchievementsSection categories={[
+                  {
+                    id: 'habits',
+                    name: 'Habit Master',
+                    description: 'Achievements related to forming and maintaining habits',
+                    achievements: [
+                      {
+                        id: '1',
+                        name: 'Early Bird',
+                        description: 'Wake up early for 30 days straight',
+                        icon: 'sun',
+                        rarity: 'rare',
+                        points: 500,
+                        criteria: {
+                          type: 'streak',
+                          target: 30,
+                          timeframe: 'monthly'
+                        },
+                        unlockedBy: 156,
+                        progress: 60
+                      }
+                    ],
+                    icon: 'trophy'
+                  }
+                ]} />
               </TabsContent>
 
               <TabsContent value="resources" className="space-y-6">
-                <div className="grid gap-6">
-                  {resources.map((resource) => (
-                    <ResourceCard
-                      key={resource.id}
-                      resource={resource}
-                      onLike={(id) => console.log('Like resource:', id)}
-                      onSave={(id) => console.log('Save resource:', id)}
-                      onShare={(id) => console.log('Share resource:', id)}
-                    />
-                  ))}
-                </div>
+                <ResourcesSection resources={mockResources} />
               </TabsContent>
             </div>
           </Tabs>

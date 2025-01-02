@@ -9,6 +9,8 @@ import { HabitCard } from "@/components/habits/habit-card";
 import type { Habit } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 
+const generateId = () => Date.now();
+
 export default function HabitsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [habits, setHabits] = useState<Habit[]>(() => {
@@ -22,16 +24,22 @@ export default function HabitsPage() {
 
   const handleSaveHabit = (habitData: Partial<Habit>) => {
     const newHabit: Habit = {
-      id: Date.now(),
-      title: habitData.title!,
+      id: generateId(),
+      title: habitData.title || "",
       description: habitData.description || "",
-      frequency: habitData.frequency!,
       type: habitData.type || "good",
-      category: habitData.category,
-      streak: 0,
+      category: habitData.category || "General",
+      frequency: habitData.frequency || "daily",
+      streak: {
+        currentStreak: 0,
+        longestStreak: 0,
+        lastUpdated: new Date().toISOString()
+      },
       progress: 0,
-      completedCount: 0,
+      lastCompleted: new Date().toISOString(),
       startDate: new Date().toISOString(),
+      completedCount: 0,
+      target: habitData.target || 30,
       widgets: [],
     };
 

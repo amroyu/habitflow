@@ -48,23 +48,10 @@ import { WidgetSettingsDialog } from "@/components/widgets/widget-settings-dialo
 import { HabitEditDialog } from "@/components/dialogs/habit-edit-dialog";
 import { DeleteConfirmationDialog } from "@/components/dialogs/delete-confirmation-dialog";
 
-interface HabitCardProps {
-  id: string;
-  title: string;
-  description: string;
-  frequency: string;
-  type: "good" | "bad";
-  streak: Streak;
-  progress: number;
-  lastCompleted?: string;
-  startDate?: string;
-  completedCount?: number;
-  target?: number;
-  widgets: Widget[];
-  category: string;
-  onComplete?: () => void;
+interface HabitCardProps extends Habit {
+  onComplete?: (habit: Habit) => void;
   onUpdateHabit?: (habit: Habit) => void;
-  onDelete?: (habitId: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function HabitCard({
@@ -86,14 +73,10 @@ export function HabitCard({
   onDelete,
 }: HabitCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedWidget, setSelectedWidget] = useState<Widget | null>(null);
   const [showWidgetPicker, setShowWidgetPicker] = useState(false);
-  const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
-  const [streakStatus, setStreakStatus] = useState<
-    "at-risk" | "good" | "excellent"
-  >("good");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const isGoodHabit = type === "good";
 
   const lastCompletedDate = lastCompleted ? new Date(lastCompleted) : null;
   const lastCompletedText = lastCompletedDate
@@ -110,11 +93,11 @@ export function HabitCard({
         lastCompletedDate
       );
       if (daysSinceLastCompletion > 2) {
-        setStreakStatus("at-risk");
-      } else if (streak > 7) {
-        setStreakStatus("excellent");
+        // setStreakStatus("at-risk");
+      } else if (streak.currentStreak > 7) {
+        // setStreakStatus("excellent");
       } else {
-        setStreakStatus("good");
+        // setStreakStatus("good");
       }
     }
   }, [lastCompleted, streak, lastCompletedDate]);
@@ -168,12 +151,12 @@ export function HabitCard({
   const handleEditWidget = (widgetId: string) => {
     const widget = widgets.find((w) => w.id === widgetId);
     if (widget) {
-      setEditingWidget(widget);
+      setSelectedWidget(widget);
     }
   };
 
-  const handleSaveWidgetSettings = (settings: WidgetSettings) => {
-    if (editingWidget && onUpdateHabit) {
+  const handleSaveWidgetSettings = (settings: any) => {
+    if (selectedWidget && onUpdateHabit) {
       onUpdateHabit({
         id,
         title,
@@ -188,11 +171,36 @@ export function HabitCard({
         target,
         category,
         widgets: widgets.map((w) =>
-          w.id === editingWidget.id ? { ...w, settings } : w
+          w.id === selectedWidget.id ? { ...w, settings } : w
         ),
       });
     }
-    setEditingWidget(null);
+    setSelectedWidget(null);
+  };
+
+  const handleComplete = () => {
+    if (onComplete) {
+      const updatedHabit: Habit = {
+        id,
+        title,
+        description,
+        frequency,
+        type,
+        streak: {
+          currentStreak: streak.currentStreak + 1,
+          longestStreak: Math.max(streak.longestStreak, streak.currentStreak + 1),
+          lastUpdated: new Date().toISOString(),
+        },
+        progress: Math.min((completedCount + 1) / target * 100, 100),
+        lastCompleted: new Date().toISOString(),
+        startDate,
+        completedCount: completedCount + 1,
+        target,
+        widgets,
+        category,
+      };
+      onComplete(updatedHabit);
+    }
   };
 
   const renderWidget = (widget: Widget) => {
@@ -249,19 +257,6 @@ export function HabitCard({
         );
       default:
         return null;
-    }
-  };
-
-  const getStreakStatusColor = () => {
-    switch (streakStatus) {
-      case "at-risk":
-        return "text-red-500 dark:text-red-400";
-      case "excellent":
-        return "text-purple-500 dark:text-purple-400";
-      default:
-        return isGoodHabit
-          ? "text-green-500 dark:text-green-400"
-          : "text-red-500 dark:text-red-400";
     }
   };
 
@@ -500,12 +495,12 @@ export function HabitCard({
                       </div>
                     </motion.div>
                   )}
-                  {editingWidget && (
+                  {selectedWidget && (
                     <CardContent className="pt-0">
                       <WidgetSettingsDialog
-                        widget={editingWidget}
+                        widget={selectedWidget}
                         open={true}
-                        onOpenChange={(open) => !open && setEditingWidget(null)}
+                        onOpenChange={(open) => !open && setSelectedWidget(null)}
                         onSave={handleSaveWidgetSettings}
                       />
                     </CardContent>
@@ -524,27 +519,27 @@ export function HabitCard({
                 type === "good" && "bg-green-500 hover:bg-green-600 text-white",
                 type === "bad" && "bg-red-500 hover:bg-red-600 text-white"
               )}
-              onClick={onComplete}
+              onClick={handleComplete}
             >
               <Check className="mr-2 h-4 w-4" />
               Mark Complete
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-none"
-              onClick={() => setShowEditDialog(true)}
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-none text-destructive hover:text-destructive"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowEditDialog(true)}
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
           </div>
         </CardFooter>
 

@@ -156,6 +156,10 @@ export default function TrackerPage() {
       localStorage.setItem('habits', JSON.stringify(updated));
       return updated;
     });
+    toast({
+      title: "Habit Deleted",
+      description: "The habit has been successfully deleted.",
+    });
   };
 
   const handleDeleteGoal = (goalId: string) => {

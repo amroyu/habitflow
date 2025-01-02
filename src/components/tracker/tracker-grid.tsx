@@ -16,8 +16,8 @@ interface TrackerGridProps {
   goals: Goal[];
   onUpdateHabit?: (habit: Habit) => void;
   onUpdateGoal?: (goal: Goal) => void;
-  onDeleteHabit?: (habitId: number) => void;
-  onDeleteGoal?: (goalId: number) => void;
+  onDeleteHabit?: (habitId: string) => void;
+  onDeleteGoal?: (goalId: string) => void;
   onAddWidget?: (goalId: number, widget: any) => void;
   onRemoveWidget?: (goalId: number, widgetId: number) => void;
 }
@@ -98,6 +98,7 @@ export function TrackerGrid({
                 <HabitCard
                   {...habit}
                   onUpdateHabit={onUpdateHabit}
+                  onDelete={onDeleteHabit}
                 />
               </div>
             </div>
