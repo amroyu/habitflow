@@ -159,3 +159,16 @@ export interface Resource {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   isPremium: boolean;
 }
+
+export interface TimerTask {
+  id: string;
+  title: string;
+  duration: number;
+  timeLeft: number;
+  completed: boolean;
+  isRunning: boolean;
+  createdAt: string;
+  lastRunAt: string | null;
+  archived: boolean;
+  source?: 'manual' | 'checklist' | 'quick-timer';
+}

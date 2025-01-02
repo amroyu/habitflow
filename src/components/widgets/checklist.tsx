@@ -3,49 +3,46 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, CheckSquare, Square } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Save, X, Trash2, CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { saveTaskToStorage } from '@/lib/task-utils';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ChecklistItem {
   id: number;
   text: string;
-  completed: boolean;
+  checked: boolean;
+  saved?: boolean;
 }
 
 interface ChecklistProps {
-  className?: string;
-  items?: ChecklistItem[];
+  initialItems?: ChecklistItem[];
   onUpdate?: (items: ChecklistItem[]) => void;
+  className?: string;
 }
 
-export function Checklist({
-  className,
-  items: initialItems = [],
+export function Checklist({ 
+  initialItems = [], 
   onUpdate,
+  className 
 }: ChecklistProps) {
   const [items, setItems] = useState<ChecklistItem[]>(initialItems);
   const [newItemText, setNewItemText] = useState('');
+  const { toast } = useToast();
 
   const handleAddItem = () => {
     if (!newItemText.trim()) return;
-    
     const newItem: ChecklistItem = {
-      id: Date.now(),
+      id: Date.now() + Math.floor(Math.random() * 1000000),  
       text: newItemText.trim(),
-      completed: false,
+      checked: false,
+      saved: false
     };
-    
     const updatedItems = [...items, newItem];
     setItems(updatedItems);
     setNewItemText('');
-    onUpdate?.(updatedItems);
-  };
-
-  const handleToggleItem = (id: number) => {
-    const updatedItems = items.map(item =>
-      item.id === id ? { ...item, completed: !item.completed } : item
-    );
-    setItems(updatedItems);
     onUpdate?.(updatedItems);
   };
 
@@ -55,52 +52,122 @@ export function Checklist({
     onUpdate?.(updatedItems);
   };
 
+  const handleToggleItem = (id: number) => {
+    const updatedItems = items.map(item =>
+      item.id === id ? { ...item, checked: !item.checked } : item
+    );
+    setItems(updatedItems);
+    onUpdate?.(updatedItems);
+  };
+
+  const handleUpdateItemText = (id: number, text: string) => {
+    const updatedItems = items.map(item =>
+      item.id === id ? { ...item, text } : item
+    );
+    setItems(updatedItems);
+    onUpdate?.(updatedItems);
+  };
+
+  const saveAsTask = async (item: ChecklistItem) => {
+    if (item.saved) {
+      toast({
+        title: "Already Saved",
+        description: "This item has already been saved as a task",
+        variant: "default"
+      });
+      return;
+    }
+
+    try {
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).substring(2, 15);
+      const uniqueId = `task-${timestamp}-${random}-${item.id}`;
+      
+      const task = saveTaskToStorage({
+        id: uniqueId,
+        title: item.text,
+        duration: 1800, 
+        source: 'checklist',
+        completed: item.checked
+      });
+
+      const updatedItems = items.map(i => 
+        i.id === item.id ? { ...i, saved: true } : i
+      );
+      setItems(updatedItems);
+      onUpdate?.(updatedItems);
+
+      toast({
+        title: "Task Created",
+        description: `"${item.text}" has been added to your tasks`,
+      });
+
+    } catch (error) {
+      console.error('Error saving task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save task. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className={cn('space-y-4', className)}>
-      <div className="flex gap-2">
+      <div className="space-y-2">
+        {items.map((item) => {
+          const itemKey = `checklist-item-${item.id}`;
+          return (
+            <div key={itemKey} className="flex items-center gap-2">
+              <Checkbox
+                checked={item.checked}
+                onCheckedChange={() => handleToggleItem(item.id)}
+              />
+              <Input
+                value={item.text}
+                onChange={(e) => handleUpdateItemText(item.id, e.target.value)}
+                className="flex-1"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => saveAsTask(item)}
+                disabled={item.saved}
+                className={item.saved ? 'text-muted-foreground' : ''}
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleRemoveItem(item.id)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-2">
         <Input
+          placeholder="Add new item"
           value={newItemText}
           onChange={(e) => setNewItemText(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && handleAddItem()}
-          placeholder="Add new item..."
-          className="flex-1"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && newItemText) {
+              handleAddItem();
+            }
+          }}
         />
-        <Button onClick={handleAddItem} size="icon">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleAddItem}
+          disabled={!newItemText.trim()}
+        >
           <Plus className="h-4 w-4" />
         </Button>
-      </div>
-      
-      <div className="space-y-2">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-center justify-between gap-2 rounded-lg border p-2"
-          >
-            <button
-              className="flex items-center gap-2 flex-1"
-              onClick={() => handleToggleItem(item.id)}
-            >
-              {item.completed ? (
-                <CheckSquare className="h-4 w-4 text-primary" />
-              ) : (
-                <Square className="h-4 w-4" />
-              )}
-              <span className={cn(
-                "text-sm",
-                item.completed && "line-through text-muted-foreground"
-              )}>
-                {item.text}
-              </span>
-            </button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleRemoveItem(item.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ))}
       </div>
     </div>
   );

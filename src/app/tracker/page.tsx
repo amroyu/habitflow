@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { HabitForm } from "@/components/habits/habit-form";
 import { GoalForm } from "@/components/goals/goal-form";
 import { TrackerGrid } from "@/components/tracker/tracker-grid";
+import { TasksSection } from "@/components/tasks/tasks-section";
 import type { Habit, Goal, Widget, Streak } from "@/types";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
@@ -181,7 +182,7 @@ export default function TrackerPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
+    <div className="container mx-auto py-6 space-y-8">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-2">
           <Input
@@ -222,19 +223,23 @@ export default function TrackerPage() {
 
       <Suspense fallback={<div>Loading...</div>}>
         {!isLoading && (
-          <TrackerGrid
-            habits={habits}
-            goals={goals}
-            searchQuery={searchQuery}
-            view={view}
-            sortBy={sortBy}
-            onUpdateHabit={handleUpdateHabit}
-            onUpdateGoal={handleUpdateGoal}
-            onDeleteHabit={handleDeleteHabit}
-            onDeleteGoal={handleDeleteGoal}
-            onAddWidget={handleAddWidget}
-            onRemoveWidget={handleRemoveWidget}
-          />
+          <div className="space-y-8">
+            <TrackerGrid
+              habits={habits}
+              goals={goals}
+              searchQuery={searchQuery}
+              view={view}
+              sortBy={sortBy}
+              onUpdateHabit={handleUpdateHabit}
+              onUpdateGoal={handleUpdateGoal}
+              onDeleteHabit={handleDeleteHabit}
+              onDeleteGoal={handleDeleteGoal}
+              onAddWidget={handleAddWidget}
+              onRemoveWidget={handleRemoveWidget}
+            />
+            
+            <TasksSection />
+          </div>
         )}
       </Suspense>
 
