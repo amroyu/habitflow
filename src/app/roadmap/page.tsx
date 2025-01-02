@@ -7,6 +7,7 @@ import { RoadMapForm } from '@/components/roadmap/roadmap-form'
 import { MilestoneForm } from '@/components/roadmap/milestone-form'
 import { RoadMapTimeline } from '@/components/roadmap/roadmap-timeline'
 import { RoadMapTemplates } from '@/components/roadmap/roadmap-templates'
+import { RoadMapCard } from '@/components/roadmap/roadmap-card'
 import { RoadMap, RoadMapMilestone, RoadMapTemplate } from '@/types'
 import { PlusIcon } from '@heroicons/react/24/outline'
 import { mockGoals, mockHabits } from '@/lib/mock-data'
@@ -107,6 +108,21 @@ export default function RoadMapPage() {
     setIsMilestoneFormOpen(false)
   }
 
+  const handleUpdateRoadMap = (updatedRoadMap: RoadMap) => {
+    const updatedRoadMaps = roadMaps.map(rm =>
+      rm.id === updatedRoadMap.id ? { ...updatedRoadMap, updatedAt: new Date().toISOString() } : rm
+    )
+    setRoadMaps(updatedRoadMaps)
+    setSelectedRoadMap(updatedRoadMap)
+  }
+
+  const handleDeleteRoadMap = (roadMapToDelete: RoadMap) => {
+    setRoadMaps(roadMaps.filter(rm => rm.id !== roadMapToDelete.id))
+    if (selectedRoadMap?.id === roadMapToDelete.id) {
+      setSelectedRoadMap(null)
+    }
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -143,23 +159,32 @@ export default function RoadMapPage() {
                   onSubmit={(data, status) => handleCreateRoadMap(data, status)}
                   initialData={undefined}
                 />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsRoadMapFormOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button variant="outline" type="submit" form="roadmap-form" onClick={() => handleCreateRoadMap(selectedRoadMap as RoadMap, 'draft')}>
-                    Save as Draft
-                  </Button>
-                  <Button type="submit" form="roadmap-form">
-                    Save & Activate
-                  </Button>
-                </div>
               </div>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
+      {/* List of Roadmaps */}
+      {roadMaps.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No roadmaps yet. Create one or choose from templates to get started.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          {roadMaps.map((roadMap) => (
+            <RoadMapCard
+              key={roadMap.id}
+              roadMap={roadMap}
+              onSelect={setSelectedRoadMap}
+              onEdit={handleUpdateRoadMap}
+              onDelete={handleDeleteRoadMap}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Selected Roadmap View */}
       {selectedRoadMap && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -182,63 +207,16 @@ export default function RoadMapPage() {
             </div>
           </div>
 
-          <RoadMapTimeline
-            roadMap={selectedRoadMap}
-            onMilestoneUpdate={(milestones) => {
-              const updatedRoadMap = {
-                ...selectedRoadMap,
-                milestones,
-                updatedAt: new Date().toISOString(),
-              }
-              setRoadMaps(roadMaps.map(rm => rm.id === selectedRoadMap.id ? updatedRoadMap : rm))
-              setSelectedRoadMap(updatedRoadMap)
-            }}
-          />
+          <div className="flex-1 overflow-auto">
+            <RoadMapTimeline 
+              roadMap={selectedRoadMap} 
+              onMilestoneClick={() => {}}
+              onEditRoadMap={handleUpdateRoadMap}
+              onDeleteRoadMap={handleDeleteRoadMap}
+            />
+          </div>
         </div>
       )}
-
-      {/* List of Road Maps */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {roadMaps.map((roadMap) => (
-          <div
-            key={roadMap.id}
-            className={cn(
-              "p-4 border rounded-lg cursor-pointer hover:border-primary/50 transition-colors",
-              selectedRoadMap?.id === roadMap.id && "border-primary"
-            )}
-            onClick={() => setSelectedRoadMap(roadMap)}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold">{roadMap.title}</h3>
-              <span className={cn(
-                "px-2 py-1 text-xs rounded-full",
-                roadMap.status === 'draft' && "bg-gray-100 text-gray-700",
-                roadMap.status === 'active' && "bg-green-100 text-green-700",
-                roadMap.status === 'completed' && "bg-blue-100 text-blue-700"
-              )}>
-                {roadMap.status.charAt(0).toUpperCase() + roadMap.status.slice(1)}
-              </span>
-            </div>
-            <p className="text-sm text-gray-500 mb-4">{roadMap.description}</p>
-            <div className="space-y-2">
-              {roadMap.milestones.slice(0, 3).map((milestone, index) => (
-                <div key={index} className="text-sm flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
-                  <div className="flex-1">
-                    <div className="font-medium">{milestone.title}</div>
-                    <div className="text-gray-500">{milestone.description}</div>
-                  </div>
-                </div>
-              ))}
-              {roadMap.milestones.length > 3 && (
-                <div className="text-sm text-gray-500">
-                  +{roadMap.milestones.length - 3} more milestones
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

@@ -4,17 +4,34 @@ import { RoadMap, RoadMapMilestone } from '@/types'
 import { motion } from 'framer-motion'
 import { CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
+import { RoadMapActions } from './roadmap-actions'
 
 interface RoadMapTimelineProps {
   roadMap: RoadMap
   onMilestoneClick?: (milestone: RoadMapMilestone) => void
+  onEditRoadMap?: (updatedRoadMap: RoadMap) => void
+  onDeleteRoadMap?: (roadMap: RoadMap) => void
 }
 
-export function RoadMapTimeline({ roadMap, onMilestoneClick }: RoadMapTimelineProps) {
+export function RoadMapTimeline({ 
+  roadMap, 
+  onMilestoneClick,
+  onEditRoadMap,
+  onDeleteRoadMap 
+}: RoadMapTimelineProps) {
   const sortedMilestones = [...roadMap.milestones].sort((a, b) => a.order - b.order)
 
   return (
-    <div className="relative">
+    <div className="relative group">
+      {/* Add RoadMap Actions */}
+      {onEditRoadMap && onDeleteRoadMap && (
+        <RoadMapActions
+          roadMap={roadMap}
+          onEdit={onEditRoadMap}
+          onDelete={onDeleteRoadMap}
+        />
+      )}
+
       {/* Timeline line */}
       <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200" />
 

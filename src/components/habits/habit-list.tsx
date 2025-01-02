@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { HabitCard } from "./habit-card";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRewards } from '@/context/rewards-context'
 import { POINTS } from '@/types/rewards'
 
@@ -68,58 +68,75 @@ export interface Habit {
   lastCompleted: string;
   completedCount: number;
   widgets: any[];
+  category?: string;
 }
 
 interface HabitListProps {
   habits?: Habit[];
   onAddHabit?: (habit: Habit) => void;
-  onUpdateHabit?: (habit: Habit[]) => void;
+  onUpdateHabit?: (habits: Habit[]) => void;
+  onDeleteHabit?: (habitId: string) => void;
 }
 
-export default function HabitList({ habits = INITIAL_HABITS, onAddHabit, onUpdateHabit }: HabitListProps) {
-  const { addPoints, checkAchievements } = useRewards()
+export default function HabitList({ 
+  habits = INITIAL_HABITS, 
+  onAddHabit, 
+  onUpdateHabit,
+  onDeleteHabit 
+}: HabitListProps) {
+  const { addPoints } = useRewards();
+  const [localHabits, setLocalHabits] = useState(habits);
 
-  const handleComplete = async (id: number) => {
-    const habit = habits.find(h => h.id === id);
-    if (!habit) return;
+  useEffect(() => {
+    setLocalHabits(habits);
+  }, [habits]);
 
-    const updatedHabits = habits.map(h => 
-      h.id === id 
-        ? { 
-            ...h, 
-            completedCount: (h.completedCount || 0) + 1,
-            lastCompleted: new Date().toISOString()
-          }
-        : h
-    );
+  const handleComplete = (habitId: number) => {
+    const updatedHabits = localHabits.map(habit => {
+      if (habit.id === habitId) {
+        return {
+          ...habit,
+          completedCount: (habit.completedCount || 0) + 1,
+          lastCompleted: new Date().toISOString()
+        };
+      }
+      return habit;
+    });
 
-    if (onUpdateHabit) {
-      onUpdateHabit(updatedHabits);
-      addPoints(POINTS.COMPLETE_HABIT, 'Completed habit: ' + habit.title);
-      checkAchievements();
-    }
-  }
+    setLocalHabits(updatedHabits);
+    onUpdateHabit?.(updatedHabits);
+    addPoints(POINTS.COMPLETE_HABIT);
+  };
 
-  const handleUpdateHabit = (id: number, widgets: any[]) => {
-    const updatedHabits = habits.map(h => 
-      h.id === id 
-        ? { ...h, widgets }
-        : h
-    );
-    
-    if (onUpdateHabit) {
-      onUpdateHabit(updatedHabits);
-    }
+  const handleDelete = (habitId: string) => {
+    onDeleteHabit?.(habitId);
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {habits.map((habit) => (
+    <div className="space-y-4">
+      {localHabits.map((habit) => (
         <HabitCard
           key={habit.id}
-          {...habit}
+          id={String(habit.id)}
+          title={habit.title}
+          description={habit.description}
+          frequency={habit.frequency}
+          type={habit.type}
+          streak={habit.streak}
+          progress={habit.progress}
+          lastCompleted={habit.lastCompleted}
+          completedCount={habit.completedCount}
+          widgets={habit.widgets}
+          category={habit.category || ''}
           onComplete={() => handleComplete(habit.id)}
-          onUpdateHabit={handleUpdateHabit}
+          onUpdateHabit={(updatedHabit) => {
+            const updatedHabits = localHabits.map(h => 
+              h.id === habit.id ? { ...updatedHabit, id: habit.id } : h
+            );
+            setLocalHabits(updatedHabits);
+            onUpdateHabit?.(updatedHabits);
+          }}
+          onDelete={handleDelete}
         />
       ))}
     </div>

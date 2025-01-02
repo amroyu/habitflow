@@ -31,7 +31,14 @@ export function RoadMapTemplates({
 
   // Get unique categories and their counts
   const { categories, categoryCount, totalTemplates, templates } = useMemo(() => {
-    const allTemplates = [...roadmapTemplates, ...customTemplates]
+    // Deduplicate templates by ID before counting
+    const allTemplates = [...roadmapTemplates, ...customTemplates].reduce((acc, template) => {
+      if (!acc.some(t => t.id === template.id)) {
+        acc.push(template);
+      }
+      return acc;
+    }, [] as RoadMapTemplate[]);
+
     const count: Record<string, number> = {}
     let total = 0
     
@@ -51,16 +58,29 @@ export function RoadMapTemplates({
     }
   }, [customTemplates])
 
-  // Filter templates based on search and category
+  // Filter templates based on search and category, ensuring no duplicates
   const filteredTemplates = useMemo(() => {
-    return templates.filter(template => {
-      const matchesSearch = template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         template.description.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesCategory = selectedCategory === 'All' || 
-                            (selectedCategory === 'Customized' && customTemplates.some(t => t.id === template.id)) ||
-                            template.category === selectedCategory
-      return matchesSearch && matchesCategory
-    })
+    const filtered = templates.filter(template => {
+      const matchesSearch = 
+        searchQuery === '' || 
+        template.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        template.description.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesCategory = 
+        selectedCategory === 'All' || 
+        (selectedCategory === 'Customized' && customTemplates.some(t => t.id === template.id)) ||
+        template.category === selectedCategory;
+
+      return matchesSearch && matchesCategory;
+    });
+
+    // Deduplicate filtered results
+    return filtered.reduce((acc, template) => {
+      if (!acc.some(t => t.id === template.id)) {
+        acc.push(template);
+      }
+      return acc;
+    }, [] as RoadMapTemplate[]);
   }, [searchQuery, selectedCategory, templates, customTemplates])
 
   const handlePreviewTemplate = (template: RoadMapTemplate) => {

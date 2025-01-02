@@ -1,15 +1,20 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { 
-  CheckCircle2, 
-  ChevronDown, 
-  ChevronUp, 
-  Plus, 
-  XCircle, 
+import {
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  XCircle,
   Calendar,
   Award,
   TrendingUp,
@@ -18,7 +23,9 @@ import {
   Flame,
   Layout,
   X,
-  Check
+  Check,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format, differenceInDays } from "date-fns";
@@ -31,15 +38,22 @@ import type { Habit, Widget, WidgetType, Streak } from "@/types";
 import { WidgetPicker } from "@/components/widgets/widget-picker";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { WidgetSettingsDialog } from "@/components/widgets/widget-settings-dialog";
+import { HabitEditDialog } from "@/components/dialogs/habit-edit-dialog";
+import { DeleteConfirmationDialog } from "@/components/dialogs/delete-confirmation-dialog";
 
 interface HabitCardProps {
   id: string;
   title: string;
   description: string;
   frequency: string;
-  type: 'good' | 'bad';
+  type: "good" | "bad";
   streak: Streak;
   progress: number;
   lastCompleted?: string;
@@ -50,6 +64,7 @@ interface HabitCardProps {
   category: string;
   onComplete?: () => void;
   onUpdateHabit?: (habit: Habit) => void;
+  onDelete?: (habitId: string) => void;
 }
 
 export function HabitCard({
@@ -68,30 +83,38 @@ export function HabitCard({
   category,
   onComplete,
   onUpdateHabit,
+  onDelete,
 }: HabitCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showWidgetPicker, setShowWidgetPicker] = useState(false);
   const [editingWidget, setEditingWidget] = useState<Widget | null>(null);
-  const [streakStatus, setStreakStatus] = useState<'at-risk' | 'good' | 'excellent'>('good');
-  const isGoodHabit = type === 'good';
-  
+  const [streakStatus, setStreakStatus] = useState<
+    "at-risk" | "good" | "excellent"
+  >("good");
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const isGoodHabit = type === "good";
+
   const lastCompletedDate = lastCompleted ? new Date(lastCompleted) : null;
   const lastCompletedText = lastCompletedDate
     ? formatDistanceToNow(lastCompletedDate, { addSuffix: true })
-    : 'Never';
-  
+    : "Never";
+
   const habitAge = differenceInDays(new Date(), new Date(startDate));
   const successRate = target > 0 ? (completedCount / target) * 100 : 0;
-  
+
   useEffect(() => {
     if (lastCompletedDate) {
-      const daysSinceLastCompletion = differenceInDays(new Date(), lastCompletedDate);
+      const daysSinceLastCompletion = differenceInDays(
+        new Date(),
+        lastCompletedDate
+      );
       if (daysSinceLastCompletion > 2) {
-        setStreakStatus('at-risk');
+        setStreakStatus("at-risk");
       } else if (streak > 7) {
-        setStreakStatus('excellent');
+        setStreakStatus("excellent");
       } else {
-        setStreakStatus('good');
+        setStreakStatus("good");
       }
     }
   }, [lastCompleted, streak, lastCompletedDate]);
@@ -101,7 +124,7 @@ export function HabitCard({
       const newWidget: Widget = {
         id: String(Date.now()),
         type: widgetType,
-        settings: {}
+        settings: {},
       };
       onUpdateHabit({
         id,
@@ -116,7 +139,7 @@ export function HabitCard({
         completedCount,
         target,
         category,
-        widgets: [...widgets, newWidget]
+        widgets: [...widgets, newWidget],
       });
     }
     setShowWidgetPicker(false);
@@ -137,13 +160,13 @@ export function HabitCard({
         completedCount,
         target,
         category,
-        widgets: widgets.filter(w => w.id !== widgetId)
+        widgets: widgets.filter((w) => w.id !== widgetId),
       });
     }
   };
 
   const handleEditWidget = (widgetId: string) => {
-    const widget = widgets.find(w => w.id === widgetId);
+    const widget = widgets.find((w) => w.id === widgetId);
     if (widget) {
       setEditingWidget(widget);
     }
@@ -164,11 +187,9 @@ export function HabitCard({
         completedCount,
         target,
         category,
-        widgets: widgets.map(w => 
-          w.id === editingWidget.id 
-            ? { ...w, settings }
-            : w
-        )
+        widgets: widgets.map((w) =>
+          w.id === editingWidget.id ? { ...w, settings } : w
+        ),
       });
     }
     setEditingWidget(null);
@@ -176,9 +197,9 @@ export function HabitCard({
 
   const renderWidget = (widget: Widget) => {
     switch (widget.type) {
-      case 'pomodoro-timer':
+      case "pomodoro-timer":
         return (
-          <PomodoroTimer 
+          <PomodoroTimer
             key={widget.id}
             workDuration={widget.settings?.workDuration}
             breakDuration={widget.settings?.breakDuration}
@@ -188,9 +209,9 @@ export function HabitCard({
             onEdit={() => handleEditWidget(widget.id)}
           />
         );
-      case 'counter':
+      case "counter":
         return (
-          <Counter 
+          <Counter
             key={widget.id}
             initialValue={widget.settings?.initialValue || 0}
             increment={widget.settings?.increment || 1}
@@ -199,27 +220,27 @@ export function HabitCard({
             onEdit={() => handleEditWidget(widget.id)}
           />
         );
-      case 'notes':
+      case "notes":
         return (
-          <Notes 
+          <Notes
             key={widget.id}
             initialNotes={widget.settings?.notes || []}
             onRemove={() => handleRemoveWidget(widget.id)}
             onEdit={() => handleEditWidget(widget.id)}
           />
         );
-      case 'checklist':
+      case "checklist":
         return (
-          <Checklist 
+          <Checklist
             key={widget.id}
             items={widget.settings?.items || []}
             onRemove={() => handleRemoveWidget(widget.id)}
             onEdit={() => handleEditWidget(widget.id)}
           />
         );
-      case 'progress-chart':
+      case "progress-chart":
         return (
-          <ProgressChart 
+          <ProgressChart
             key={widget.id}
             data={widget.settings?.data || []}
             onRemove={() => handleRemoveWidget(widget.id)}
@@ -233,34 +254,37 @@ export function HabitCard({
 
   const getStreakStatusColor = () => {
     switch (streakStatus) {
-      case 'at-risk':
-        return 'text-red-500 dark:text-red-400';
-      case 'excellent':
-        return 'text-purple-500 dark:text-purple-400';
+      case "at-risk":
+        return "text-red-500 dark:text-red-400";
+      case "excellent":
+        return "text-purple-500 dark:text-purple-400";
       default:
-        return isGoodHabit ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+        return isGoodHabit
+          ? "text-green-500 dark:text-green-400"
+          : "text-red-500 dark:text-red-400";
     }
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.2 }}
-    >
-      <Card 
+    <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
+      <Card
         className={cn(
           "group relative overflow-hidden transition-all duration-200",
-          type === 'good' && "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]",
-          type === 'bad' && "bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20 hover:shadow-[0_0_20px_rgba(239,68,68,0.1)]",
+          type === "good" &&
+            "bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)]",
+          type === "bad" &&
+            "bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20 hover:shadow-[0_0_20px_rgba(239,68,68,0.1)]",
           isExpanded && "shadow-lg"
         )}
       >
         {/* Status indicator line */}
-        <div className={cn(
-          "absolute top-0 left-0 right-0 h-1 transition-all duration-300",
-          type === 'good' && "bg-gradient-to-r from-green-500 to-emerald-500",
-          type === 'bad' && "bg-gradient-to-r from-red-500 to-rose-500",
-        )} />
+        <div
+          className={cn(
+            "absolute top-0 left-0 right-0 h-1 transition-all duration-300",
+            type === "good" && "bg-gradient-to-r from-green-500 to-emerald-500",
+            type === "bad" && "bg-gradient-to-r from-red-500 to-rose-500"
+          )}
+        />
 
         <CardHeader className="relative pb-2 pt-6">
           <motion.div
@@ -271,24 +295,26 @@ export function HabitCard({
           >
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">
-                <motion.h3 
+                <motion.h3
                   className={cn(
                     "font-semibold text-lg",
-                    type === 'good' ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                    type === "good"
+                      ? "text-green-700 dark:text-green-400"
+                      : "text-red-700 dark:text-red-400"
                   )}
                   whileHover={{ scale: 1.02 }}
                 >
                   {title}
                 </motion.h3>
-                <Badge 
-                  variant={type === 'good' ? "default" : "destructive"}
+                <Badge
+                  variant={type === "good" ? "default" : "destructive"}
                   className="animate-in fade-in duration-500"
                 >
-                  {type === 'good' ? 'Build' : 'Break'}
+                  {type === "good" ? "Build" : "Break"}
                 </Badge>
               </div>
               {description && (
-                <motion.p 
+                <motion.p
                   className="text-sm text-muted-foreground"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -297,7 +323,7 @@ export function HabitCard({
                   {description}
                 </motion.p>
               )}
-              <motion.div 
+              <motion.div
                 className="flex items-center gap-2 text-sm text-muted-foreground"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -316,17 +342,16 @@ export function HabitCard({
               </motion.div>
             </div>
             <div className="flex gap-2">
-              <motion.div 
-                whileHover={{ scale: 1.05 }} 
-                className="relative"
-              >
+              <motion.div whileHover={{ scale: 1.05 }} className="relative">
                 <Button
                   variant="ghost"
                   size="sm"
                   className={cn(
                     "h-8 flex items-center gap-1.5 px-2.5 rounded-full transition-colors",
-                    type === 'good' && "hover:bg-green-100 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400",
-                    type === 'bad' && "hover:bg-red-100 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400"
+                    type === "good" &&
+                      "hover:bg-green-100 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400",
+                    type === "bad" &&
+                      "hover:bg-red-100 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400"
                   )}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -337,17 +362,16 @@ export function HabitCard({
                   <span className="text-sm">Add Widget</span>
                 </Button>
               </motion.div>
-              <motion.div 
-                whileHover={{ scale: 1.05 }}
-                className="relative"
-              >
+              <motion.div whileHover={{ scale: 1.05 }} className="relative">
                 <Button
                   variant="ghost"
                   size="sm"
                   className={cn(
                     "h-8 flex items-center gap-1.5 px-2.5 rounded-full transition-colors",
-                    type === 'good' && "hover:bg-green-100 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400",
-                    type === 'bad' && "hover:bg-red-100 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400"
+                    type === "good" &&
+                      "hover:bg-green-100 dark:hover:bg-green-900/20 text-green-700 dark:text-green-400",
+                    type === "bad" &&
+                      "hover:bg-red-100 dark:hover:bg-red-900/20 text-red-700 dark:text-red-400"
                   )}
                   onClick={() => setIsExpanded(!isExpanded)}
                 >
@@ -357,7 +381,9 @@ export function HabitCard({
                   >
                     <ChevronDown className="h-3.5 w-3.5" />
                   </motion.div>
-                  <span className="text-sm">{isExpanded ? 'Less' : 'More'}</span>
+                  <span className="text-sm">
+                    {isExpanded ? "Less" : "More"}
+                  </span>
                 </Button>
               </motion.div>
             </div>
@@ -368,7 +394,7 @@ export function HabitCard({
           <div className="space-y-4">
             {/* Progress Section */}
             <div className="space-y-2">
-              <motion.div 
+              <motion.div
                 className="flex justify-between text-sm"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -382,19 +408,21 @@ export function HabitCard({
                 animate={{ scaleX: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
               >
-                <Progress 
-                  value={progress} 
+                <Progress
+                  value={progress}
                   className={cn(
                     "h-2",
-                    type === 'good' && "[&>div]:bg-gradient-to-r [&>div]:from-green-500 [&>div]:to-emerald-500",
-                    type === 'bad' && "[&>div]:bg-gradient-to-r [&>div]:from-red-500 [&>div]:to-rose-500"
-                  )} 
+                    type === "good" &&
+                      "[&>div]:bg-gradient-to-r [&>div]:from-green-500 [&>div]:to-emerald-500",
+                    type === "bad" &&
+                      "[&>div]:bg-gradient-to-r [&>div]:from-red-500 [&>div]:to-rose-500"
+                  )}
                 />
               </motion.div>
             </div>
 
             {/* Streak Section */}
-            <motion.div 
+            <motion.div
               className="flex items-center justify-between"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -402,25 +430,34 @@ export function HabitCard({
             >
               <div className="flex items-center gap-2">
                 <motion.div
-                  animate={{ 
+                  animate={{
                     scale: [1, 1.2, 1],
-                    rotate: [0, 5, -5, 0] 
+                    rotate: [0, 5, -5, 0],
                   }}
-                  transition={{ 
+                  transition={{
                     duration: 1,
                     repeat: Infinity,
-                    repeatDelay: 2
+                    repeatDelay: 2,
                   }}
                 >
-                  <Flame className={cn(
-                    "h-5 w-5",
-                    streak.currentStreak > 0 ? "text-orange-500" : "text-muted-foreground"
-                  )} />
+                  <Flame
+                    className={cn(
+                      "h-5 w-5",
+                      streak.currentStreak > 0
+                        ? "text-orange-500"
+                        : "text-muted-foreground"
+                    )}
+                  />
                 </motion.div>
                 <div className="text-sm">
-                  <span className="font-medium">{streak.currentStreak} day streak</span>
+                  <span className="font-medium">
+                    {streak.currentStreak} day streak
+                  </span>
                   {streak.longestStreak > 0 && (
-                    <span className="text-muted-foreground"> • Best: {streak.longestStreak}</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      • Best: {streak.longestStreak}
+                    </span>
                   )}
                 </div>
               </div>
@@ -479,40 +516,76 @@ export function HabitCard({
           </div>
         </CardContent>
 
-        <CardFooter className="pt-0">
-          <motion.div className="w-full" whileHover={{ scale: 1.02 }}>
-            <Button 
+        <CardFooter className="flex justify-between items-center p-2">
+          <div className="flex gap-2 w-full">
+            <Button
               className={cn(
-                "w-full relative overflow-hidden group",
-                type === 'good' && "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800",
-                type === 'bad' && "bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+                "flex-1 transition-all",
+                type === "good" && "bg-green-500 hover:bg-green-600 text-white",
+                type === "bad" && "bg-red-500 hover:bg-red-600 text-white"
               )}
               onClick={onComplete}
             >
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100"
-                initial={false}
-                animate={{ 
-                  x: [-500, 500],
-                }}
-                transition={{ 
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-              />
-              <div className="flex items-center justify-center gap-2">
-                <Check className="h-4 w-4" />
-                <span>Mark as Complete</span>
-              </div>
+              <Check className="mr-2 h-4 w-4" />
+              Mark Complete
             </Button>
-          </motion.div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-none"
+              onClick={() => setShowEditDialog(true)}
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-none text-destructive hover:text-destructive"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </CardFooter>
 
         <WidgetPicker
           open={showWidgetPicker}
           onOpenChange={setShowWidgetPicker}
           onSelect={handleAddWidget}
+        />
+
+        <HabitEditDialog
+          habit={{
+            id,
+            title,
+            description,
+            frequency,
+            type,
+            streak,
+            progress,
+            lastCompleted,
+            startDate,
+            completedCount,
+            target,
+            widgets,
+            category,
+          }}
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          onSave={(updatedHabit) => {
+            onUpdateHabit?.(updatedHabit);
+            setShowEditDialog(false);
+          }}
+        />
+
+        <DeleteConfirmationDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onConfirm={() => {
+            onDelete?.(id);
+            setShowDeleteDialog(false);
+          }}
+          title={title}
         />
       </Card>
     </motion.div>
