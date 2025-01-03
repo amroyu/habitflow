@@ -27,6 +27,7 @@ import { ChevronDown, CalendarDays } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { TypeFilter } from "@/components/widgets/type-filter";
+import { initializeMockData } from "@/lib/mock-data";
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -93,9 +94,13 @@ export function Timeline() {
   const [goals] = useLocalStorage<Goal[]>("goals", []);
   const [habits] = useLocalStorage<Habit[]>("habits", []);
   const [notes] = useLocalStorage<Note[]>("notes", []);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setDate(new Date());
+    const timelineData = initializeMockData();
+    setActivities(timelineData);
+    setIsLoading(false);
   }, []);
 
   const getAllActivities = () => {
@@ -162,7 +167,10 @@ export function Timeline() {
         time: resource.dateAdded ? new Date(resource.dateAdded) : null,
         category: "resource",
         resourceType: resource.type
-      }))
+      })),
+
+      // New mock data
+      ...activities
     ];
 
     const filteredActivities = searchTerm 
@@ -370,6 +378,10 @@ export function Timeline() {
         );
     }
   };
+
+  if (isLoading) {
+    return <div>Loading timeline...</div>;
+  }
 
   return (
     <div className="container py-8 space-y-6">
