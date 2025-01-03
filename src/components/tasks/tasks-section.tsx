@@ -18,7 +18,8 @@ import {
   CalendarClock,
   Pencil,
   Undo,
-  Circle
+  Circle,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -44,8 +45,12 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { undoLastAction } from "@/lib/task-utils";
 
-export function TasksSection() {
-  const [tasks, setTasks] = useState<TimerTask[]>([]);
+interface TasksSectionProps {
+  tasks: TimerTask[];
+  onUpdateTasks?: (tasks: TimerTask[]) => void;
+}
+
+export function TasksSection({ tasks, onUpdateTasks }: TasksSectionProps) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [view, setView] = useState<'current' | 'archived'>('current');
@@ -57,35 +62,10 @@ export function TasksSection() {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
-    const loadTasks = () => {
-      const savedTasks = localStorage.getItem('timerTasks');
-      if (savedTasks) {
-        try {
-          const parsedTasks = JSON.parse(savedTasks);
-          setTasks(parsedTasks);
-        } catch (error) {
-          console.error('Error parsing tasks:', error);
-        }
-      }
-    };
-
-    loadTasks();
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'timerTasks') {
-        loadTasks();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('taskAdded', loadTasks);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('taskAdded', loadTasks);
-    };
-  }, []);
+  const updateTasks = (newTasks: TimerTask[]) => {
+    localStorage.setItem('timerTasks', JSON.stringify(newTasks));
+    onUpdateTasks?.(newTasks);
+  };
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -110,7 +90,7 @@ export function TasksSection() {
   };
 
   const startTask = (taskId: string) => {
-    setTasks(tasks.map(task => {
+    const updatedTasks = tasks.map(task => {
       if (task.id === taskId) {
         return { 
           ...task, 
@@ -121,34 +101,34 @@ export function TasksSection() {
         return { ...task, isRunning: false };
       }
       return task;
-    }));
+    });
     setActiveTaskId(taskId);
-    localStorage.setItem('timerTasks', JSON.stringify(tasks));
+    updateTasks(updatedTasks);
   };
 
   const stopTask = (taskId: string) => {
-    setTasks(tasks.map(task => 
+    const updatedTasks = tasks.map(task => 
       task.id === taskId ? { ...task, isRunning: false } : task
-    ));
+    );
     setActiveTaskId(null);
-    localStorage.setItem('timerTasks', JSON.stringify(tasks));
+    updateTasks(updatedTasks);
   };
 
   const resetTask = (taskId: string) => {
-    setTasks(tasks.map(task =>
+    const updatedTasks = tasks.map(task =>
       task.id === taskId ? { ...task, timeLeft: task.duration } : task
-    ));
-    localStorage.setItem('timerTasks', JSON.stringify(tasks));
+    );
+    updateTasks(updatedTasks);
   };
 
   const completeTask = (taskId: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    setTasks(tasks.map(t =>
+    const updatedTasks = tasks.map(t =>
       t.id === taskId ? { ...t, completed: !t.completed, isRunning: false } : t
-    ));
-    localStorage.setItem('timerTasks', JSON.stringify(tasks));
+    );
+    updateTasks(updatedTasks);
 
     toast({
       title: task.completed ? "Task Uncompleted" : "Task Completed",
@@ -157,49 +137,49 @@ export function TasksSection() {
   };
 
   const archiveTask = (taskId: string) => {
-    setTasks(tasks.map(task =>
+    const updatedTasks = tasks.map(task =>
       task.id === taskId ? { ...task, archived: true } : task
-    ));
-    localStorage.setItem('timerTasks', JSON.stringify(tasks));
+    );
+    updateTasks(updatedTasks);
   };
 
   const deleteTask = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
-    localStorage.setItem('timerTasks', JSON.stringify(tasks));
+    const updatedTasks = tasks.filter(task => task.id !== taskId);
+    updateTasks(updatedTasks);
   };
 
   const startEditingTask = (task: TimerTask) => {
     setEditingTask(task);
     setEditForm({
       title: task.title,
-      duration: Math.floor(task.duration / 60) // Convert seconds to minutes for editing
+      duration: Math.floor(task.duration / 60)
     });
     setIsEditDialogOpen(true);
   };
 
   const saveTaskEdit = () => {
     if (editingTask) {
-      setTasks(tasks.map(task =>
+      const updatedTasks = tasks.map(task =>
         task.id === editingTask.id
           ? {
               ...task,
               title: editForm.title,
-              duration: editForm.duration * 60, // Convert minutes back to seconds
-              timeLeft: editForm.duration * 60 // Reset timeLeft to new duration
+              duration: editForm.duration * 60,
+              timeLeft: editForm.duration * 60
             }
           : task
-      ));
-      localStorage.setItem('timerTasks', JSON.stringify(tasks));
+      );
+      updateTasks(updatedTasks);
     }
     setIsEditDialogOpen(false);
     setEditingTask(null);
   };
 
   const unarchiveTask = (taskId: string) => {
-    setTasks(tasks.map(task =>
+    const updatedTasks = tasks.map(task =>
       task.id === taskId ? { ...task, archived: false } : task
-    ));
-    localStorage.setItem('timerTasks', JSON.stringify(tasks));
+    );
+    updateTasks(updatedTasks);
   };
 
   const filteredTasks = tasks.filter(task => {
@@ -220,7 +200,45 @@ export function TasksSection() {
   };
 
   if (tasks.length === 0) {
-    return null;
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold">Tasks</h2>
+            <p className="text-sm text-muted-foreground">
+              No tasks yet. Create your first task to get started!
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-8 flex flex-col items-center justify-center text-center">
+            <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Tasks</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create your first task to start tracking your time
+            </p>
+            <Button onClick={() => {
+              const newTask: TimerTask = {
+                id: String(Date.now()),
+                title: "New Task",
+                duration: 25 * 60, // 25 minutes in seconds
+                timeLeft: 25 * 60,
+                completed: false,
+                isRunning: false,
+                createdAt: new Date().toISOString(),
+                lastRunAt: null,
+                archived: false,
+                source: 'manual'
+              };
+              updateTasks([newTask]);
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Task
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -257,27 +275,51 @@ export function TasksSection() {
             </DropdownMenu>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            const undoneAction = undoLastAction();
-            if (undoneAction) {
-              toast({
-                title: "Action Undone",
-                description: `Undid ${undoneAction.type} action for task: ${undoneAction.task.title}`,
-              });
-            } else {
-              toast({
-                title: "Nothing to Undo",
-                description: "No recent actions to undo",
-                variant: "default"
-              });
-            }
-          }}
-        >
-          <Undo className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const newTask: TimerTask = {
+                id: String(Date.now()),
+                title: "New Task",
+                duration: 25 * 60,
+                timeLeft: 25 * 60,
+                completed: false,
+                isRunning: false,
+                createdAt: new Date().toISOString(),
+                lastRunAt: null,
+                archived: false,
+                source: 'manual'
+              };
+              updateTasks([...tasks, newTask]);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Task
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => {
+              const undoneAction = undoLastAction();
+              if (undoneAction) {
+                toast({
+                  title: "Action Undone",
+                  description: `Undid ${undoneAction.type} action for task: ${undoneAction.task.title}`,
+                });
+              } else {
+                toast({
+                  title: "Nothing to Undo",
+                  description: "No recent actions to undo",
+                  variant: "default"
+                });
+              }
+            }}
+          >
+            <Undo className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <Card className="w-full">
         <CardContent>

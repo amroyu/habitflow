@@ -65,7 +65,17 @@ export interface EntryContent {
   };
 }
 
-export type WidgetType = 'pomodoro-timer' | 'counter' | 'notes' | 'checklist' | 'progress-chart';
+export type WidgetType = 
+  | 'pomodoro-timer' 
+  | 'counter' 
+  | 'notes' 
+  | 'checklist' 
+  | 'progress-chart'
+  | 'files'
+  | 'links'
+  | 'gallery'
+  | 'calendar'
+  | 'kanban';
 
 export interface WidgetSettings {
   // Pomodoro settings
@@ -93,6 +103,56 @@ export interface WidgetSettings {
   data?: Array<{
     date: string;
     value: number;
+  }>;
+
+  // Files settings
+  files?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+    uploadedAt: string;
+  }>;
+
+  // Links settings
+  links?: Array<{
+    id: string;
+    title: string;
+    url: string;
+    icon?: string;
+    description?: string;
+  }>;
+
+  // Gallery settings
+  images?: Array<{
+    id: string;
+    url: string;
+    caption?: string;
+    uploadedAt: string;
+  }>;
+
+  // Calendar settings
+  events?: Array<{
+    id: string;
+    title: string;
+    startDate: string;
+    endDate?: string;
+    allDay?: boolean;
+    description?: string;
+  }>;
+
+  // Kanban settings
+  columns?: Array<{
+    id: string;
+    title: string;
+    cards: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      dueDate?: string;
+      labels?: string[];
+    }>;
   }>;
 }
 

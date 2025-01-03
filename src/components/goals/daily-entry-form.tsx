@@ -1,5 +1,5 @@
 import { Fragment, useState, useEffect } from 'react'
-import { Dialog, Transition } from '@headlessui/react'
+import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog"
 import { XMarkIcon, PlusIcon, TrashIcon, PaperClipIcon, LinkIcon, ListBulletIcon, DocumentTextIcon } from '@heroicons/react/24/outline'
 import { DailyEntry, EntryContent, EntryContentType, ChecklistItem } from '@/types'
 import { format } from 'date-fns'
@@ -203,119 +203,88 @@ export function DailyEntryForm({ isOpen, onClose, onSave, goalId, initialData }:
   }
 
   return (
-    <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black/25" />
-        </Transition.Child>
-
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              enterTo="opacity-100 translate-y-0 sm:scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            >
-              <Dialog.Panel className="relative w-full max-w-2xl transform rounded-lg bg-white shadow-xl transition-all">
-                <div className="border-b border-gray-200 px-6 py-4">
-                  <Dialog.Title className="text-lg font-semibold text-gray-900">
-                    {initialData ? 'Edit Entry' : 'Add New Entry'}
-                  </Dialog.Title>
-                </div>
-
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                  <div>
-                    <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      id="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-4">
-                    {contents.map((content, index) => (
-                      <div key={index} className="relative bg-gray-50 rounded-lg p-4">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveContent(index)}
-                          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-                        >
-                          <XMarkIcon className="h-5 w-5" />
-                        </button>
-                        {renderContentEditor(content, index)}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleAddContent('text')}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Add Text
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddContent('checklist')}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Add Checklist
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddContent('link')}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Add Link
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleAddContent('file')}
-                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Add File
-                    </button>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-4 flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                      {initialData ? 'Save Changes' : 'Add Entry'}
-                    </button>
-                  </div>
-                </form>
-              </Dialog.Panel>
-            </Transition.Child>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{initialData ? 'Edit Entry' : 'Add Daily Entry'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+              Date
+            </label>
+            <input
+              type="date"
+              id="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            />
           </div>
-        </div>
-      </Dialog>
-    </Transition.Root>
+
+          <div className="space-y-4">
+            {contents.map((content, index) => (
+              <div key={index} className="relative bg-gray-50 rounded-lg p-4">
+                <button
+                  type="button"
+                  onClick={() => handleRemoveContent(index)}
+                  className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+                {renderContentEditor(content, index)}
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handleAddContent('text')}
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Add Text
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddContent('checklist')}
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Add Checklist
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddContent('link')}
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Add Link
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddContent('file')}
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Add File
+            </button>
+          </div>
+
+          <div className="border-t border-gray-200 pt-4 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              {initialData ? 'Save Changes' : 'Add Entry'}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

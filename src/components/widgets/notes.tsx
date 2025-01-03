@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { Plus, X } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { Plus, X } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface NotesProps {
   className?: string;
@@ -19,13 +19,13 @@ export function Notes({
   onNotesChange,
 }: NotesProps) {
   const [notes, setNotes] = useState<string[]>(initialNotes);
-  const [newNote, setNewNote] = useState('');
+  const [newNote, setNewNote] = useState("");
 
   const handleAddNote = () => {
     if (newNote.trim()) {
       const updatedNotes = [...notes, newNote.trim()];
       setNotes(updatedNotes);
-      setNewNote('');
+      setNewNote("");
       onNotesChange?.(updatedNotes);
     }
   };
@@ -37,7 +37,7 @@ export function Notes({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleAddNote();
     }
   };

@@ -37,6 +37,8 @@ export function GoalEditDialog({ goal, open, onOpenChange, onSave }: GoalEditDia
     onOpenChange(false);
   };
 
+  const isValid = (date: Date) => !isNaN(date.getTime());
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -99,7 +101,9 @@ export function GoalEditDialog({ goal, open, onOpenChange, onSave }: GoalEditDia
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.endDate ? format(formData.endDate, "PPP") : <span>Pick a date</span>}
+                  {formData.endDate && isValid(new Date(formData.endDate)) 
+                    ? format(new Date(formData.endDate), "PPP") 
+                    : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">

@@ -8,7 +8,7 @@ import { HabitForm } from "@/components/habits/habit-form";
 import { GoalForm } from "@/components/goals/goal-form";
 import { TrackerGrid } from "@/components/tracker/tracker-grid";
 import { TasksSection } from "@/components/tasks/tasks-section";
-import type { Habit, Goal, Widget, Streak } from "@/types";
+import type { Habit, Goal, Widget, TimerTask } from "@/types";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -22,13 +22,16 @@ export default function TrackerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [tasks, setTasks] = useState<TimerTask[]>([]);
   
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedHabits = localStorage.getItem('habits');
       const savedGoals = localStorage.getItem('goals');
+      const savedTasks = localStorage.getItem('timerTasks');
       setHabits(savedHabits ? JSON.parse(savedHabits) : []);
       setGoals(savedGoals ? JSON.parse(savedGoals) : []);
+      setTasks(savedTasks ? JSON.parse(savedTasks) : []);
       setIsLoading(false);
     }
   }, []);
@@ -125,7 +128,7 @@ export default function TrackerPage() {
         if (goal.id === goalId) {
           return {
             ...goal,
-            widgets: [...goal.widgets, widget]
+            widgets: [...(goal.widgets || []), widget]
           };
         }
         return goal;
@@ -141,7 +144,7 @@ export default function TrackerPage() {
         if (goal.id === goalId) {
           return {
             ...goal,
-            widgets: goal.widgets.filter(w => w.id !== widgetId)
+            widgets: goal.widgets ? goal.widgets.filter(w => w.id !== widgetId) : []
           };
         }
         return goal;
@@ -169,6 +172,10 @@ export default function TrackerPage() {
       localStorage.setItem('goals', JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const handleUpdateTasks = (updatedTasks: TimerTask[]) => {
+    setTasks(updatedTasks);
   };
 
   const handleCloseDialog = () => {
@@ -238,7 +245,7 @@ export default function TrackerPage() {
               onRemoveWidget={handleRemoveWidget}
             />
             
-            <TasksSection />
+            <TasksSection tasks={tasks} onUpdateTasks={handleUpdateTasks} />
           </div>
         )}
       </Suspense>

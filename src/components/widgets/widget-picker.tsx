@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Timer, Hash, StickyNote, CheckSquare, LineChart } from 'lucide-react';
+import { Timer, Hash, StickyNote, CheckSquare, LineChart, File, Link, Image, Calendar, Layout } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -62,6 +62,41 @@ const widgetTypes: {
     description: 'Visualize your progress',
     color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
   },
+  {
+    type: 'files',
+    icon: <File className="h-6 w-6" />,
+    label: 'Files',
+    description: 'Store and organize files',
+    color: 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300'
+  },
+  {
+    type: 'links',
+    icon: <Link className="h-6 w-6" />,
+    label: 'Links',
+    description: 'Collect and organize useful links',
+    color: 'bg-pink-100 dark:bg-pink-900/20 text-pink-700 dark:text-pink-300'
+  },
+  {
+    type: 'gallery',
+    icon: <Image className="h-6 w-6" />,
+    label: 'Gallery',
+    description: 'Organize images and photos',
+    color: 'bg-cyan-100 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
+  },
+  {
+    type: 'calendar',
+    icon: <Calendar className="h-6 w-6" />,
+    label: 'Calendar',
+    description: 'Schedule and track events',
+    color: 'bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
+  },
+  {
+    type: 'kanban',
+    icon: <Layout className="h-6 w-6" />,
+    label: 'Kanban',
+    description: 'Organize tasks in columns',
+    color: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300'
+  }
 ];
 
 export function WidgetPicker({ onSelect, onOpenChange, open }: WidgetPickerProps) {

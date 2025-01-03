@@ -34,6 +34,11 @@ import { Counter } from "@/components/widgets/counter";
 import { Notes } from "@/components/widgets/notes";
 import { Checklist } from "@/components/widgets/checklist";
 import { ProgressChart } from "@/components/widgets/progress-chart";
+import { Files } from "@/components/widgets/files";
+import { Links } from "@/components/widgets/links";
+import { Gallery } from "@/components/widgets/gallery";
+import { Calendar as CalendarWidget } from "@/components/widgets/calendar";
+import { Kanban } from "@/components/widgets/kanban";
 import type { Habit, Widget, WidgetType, Streak } from "@/types";
 import { WidgetPicker } from "@/components/widgets/widget-picker";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,7 +65,7 @@ export function HabitCard({
   description,
   frequency,
   type,
-  streak,
+  streak = { currentStreak: 0, longestStreak: 0, lastUpdated: null },
   progress,
   lastCompleted,
   startDate,
@@ -255,6 +260,66 @@ export function HabitCard({
             onEdit={() => handleEditWidget(widget.id)}
           />
         );
+      case "files":
+        return (
+          <Files
+            key={widget.id}
+            files={widget.settings?.files || []}
+            onRemove={() => handleRemoveWidget(widget.id)}
+            onEdit={() => handleEditWidget(widget.id)}
+            onChange={(files) =>
+              handleSaveWidgetSettings({ ...widget.settings, files })
+            }
+          />
+        );
+      case "links":
+        return (
+          <Links
+            key={widget.id}
+            links={widget.settings?.links || []}
+            onRemove={() => handleRemoveWidget(widget.id)}
+            onEdit={() => handleEditWidget(widget.id)}
+            onChange={(links) =>
+              handleSaveWidgetSettings({ ...widget.settings, links })
+            }
+          />
+        );
+      case "gallery":
+        return (
+          <Gallery
+            key={widget.id}
+            images={widget.settings?.images || []}
+            onRemove={() => handleRemoveWidget(widget.id)}
+            onEdit={() => handleEditWidget(widget.id)}
+            onChange={(images) =>
+              handleSaveWidgetSettings({ ...widget.settings, images })
+            }
+          />
+        );
+      case "calendar":
+        return (
+          <CalendarWidget
+            key={widget.id}
+            events={widget.settings?.events || []}
+            onRemove={() => handleRemoveWidget(widget.id)}
+            onEdit={() => handleEditWidget(widget.id)}
+            onChange={(events) =>
+              handleSaveWidgetSettings({ ...widget.settings, events })
+            }
+          />
+        );
+      case "kanban":
+        return (
+          <Kanban
+            key={widget.id}
+            columns={widget.settings?.columns || []}
+            onRemove={() => handleRemoveWidget(widget.id)}
+            onEdit={() => handleEditWidget(widget.id)}
+            onChange={(columns) =>
+              handleSaveWidgetSettings({ ...widget.settings, columns })
+            }
+          />
+        );
       default:
         return null;
     }
@@ -438,7 +503,7 @@ export function HabitCard({
                   <Flame
                     className={cn(
                       "h-5 w-5",
-                      streak.currentStreak > 0
+                      streak?.currentStreak > 0
                         ? "text-orange-500"
                         : "text-muted-foreground"
                     )}
