@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Logo } from "@/components/ui/logo"
 
 const navItems = [
   {
@@ -110,8 +111,20 @@ export default function Navbar() {
   }
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.refresh()
+    try {
+      await supabase.auth.signOut()
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account",
+      })
+      router.push('/login')
+    } catch (error) {
+      toast({
+        title: "Error signing out",
+        description: "There was a problem signing out. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const quickActions = [
@@ -230,21 +243,7 @@ export default function Navbar() {
         <div className="flex h-16 items-center px-4">
           {/* Left section - Logo */}
           <Link href="/" className="flex items-center gap-2 mr-6">
-            <Image
-              src="/logos/icon-light.svg"
-              alt="HabitFlow Icon"
-              width={36}
-              height={36}
-              className="dark:hidden"
-            />
-            <Image
-              src="/logos/icon-dark.svg"
-              alt="HabitFlow Icon"
-              width={36}
-              height={36}
-              className="hidden dark:block"
-            />
-            <span className="text-xl font-bold">HabitFlow</span>
+            <Logo size="sm" />
           </Link>
 
           {/* Center section - Main navigation */}

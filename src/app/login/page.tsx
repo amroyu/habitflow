@@ -1,19 +1,107 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
+import { useToast } from "@/components/ui/use-toast"
 
 export default function LoginPage() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const { toast } = useToast()
+  const supabase = createClientComponentClient()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        if (session.user.user_metadata?.role === 'admin') {
+          router.push('/admin')
+        } else {
+          router.push('/dashboard')
+        }
+      }
+    }
+    checkSession()
+  }, [supabase.auth, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true)
+
+    try {
+      let signInResult;
+
+      // Try admin login first
+      if (usernameOrEmail === 'admin' && password === 'admin123') {
+        signInResult = await supabase.auth.signInWithPassword({
+          email: 'admin@habitflow.app',
+          password: 'admin123',
+        });
+      } else {
+        // Regular user login
+        signInResult = await supabase.auth.signInWithPassword({
+          email: usernameOrEmail,
+          password,
+        });
+      }
+
+      if (signInResult.error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: signInResult.error.message,
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Logged in successfully",
+      });
+
+      // Use window.location for a hard refresh
+      window.location.href = '/dashboard';
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred during login",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthSignIn = async (provider: 'google' | 'twitter') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (error) throw error
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred during OAuth sign in",
+      })
+    }
+  }
+
+  const handleAdminLogin = () => {
+    setUsernameOrEmail('admin');
+    setPassword('admin123');
   };
 
   return (
@@ -56,6 +144,7 @@ export default function LoginPage() {
                 value={usernameOrEmail}
                 onChange={(e) => setUsernameOrEmail(e.target.value)}
                 className="h-10"
+                disabled={loading}
               />
             </div>
 
@@ -67,12 +156,13 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-10"
+                disabled={loading}
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Checkbox id="remember" />
+                <Checkbox id="remember" disabled={loading} />
                 <Label htmlFor="remember" className="text-sm text-gray-500">Remember me</Label>
               </div>
               <Link href="/reset-password" className="text-sm text-primary hover:underline">
@@ -80,8 +170,8 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full h-10">
-              Sign in
+            <Button type="submit" className="w-full h-10" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
 
             <div className="relative">
@@ -94,11 +184,21 @@ export default function LoginPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-10">
+              <Button 
+                variant="outline" 
+                className="h-10"
+                onClick={() => handleOAuthSignIn('google')}
+                disabled={loading}
+              >
                 <Image src="/google.svg" alt="Google" width={18} height={18} className="mr-2" />
                 Google
               </Button>
-              <Button variant="outline" className="h-10">
+              <Button 
+                variant="outline" 
+                className="h-10"
+                onClick={() => handleOAuthSignIn('twitter')}
+                disabled={loading}
+              >
                 <Image src="/twitter.svg" alt="Twitter" width={18} height={18} className="mr-2" />
                 Twitter
               </Button>
@@ -110,6 +210,24 @@ export default function LoginPage() {
                 Sign up
               </Link>
             </p>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-gray-500">admin access</span>
+              </div>
+            </div>
+
+            <Button 
+              variant="outline" 
+              className="w-full h-10"
+              onClick={handleAdminLogin}
+              disabled={loading}
+            >
+              Login as Admin
+            </Button>
           </form>
         </div>
       </div>

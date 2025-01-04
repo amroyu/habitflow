@@ -4,12 +4,19 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
-const ADMIN_EMAIL = 'admin@habitflow.app';
+const ADMIN_USERNAME = 'admin';
 const ADMIN_PASSWORD = 'admin123';
+const ADMIN_EMAIL = 'admin@habitflow.app';
 
-export async function adminLogin() {
+export async function adminLogin(username: string, password: string) {
+  // First check if the credentials match our admin constants
+  if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+    return { success: false, error: 'Invalid admin credentials' };
+  }
+
   try {
     const cookieStore = cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
     
     // Create admin client with service role key
     const supabaseAdmin = createClient(
@@ -23,92 +30,50 @@ export async function adminLogin() {
       }
     );
 
-    // Create regular client for session management
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
-
-    // First, try to get the admin user
+    // First try to get the admin user
     const { data: { users }, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (getUserError) {
-      console.error('Error getting users:', getUserError);
-      return { success: false, error: getUserError.message };
+      console.error('Error checking admin user:', getUserError);
+      return { success: false, error: 'Failed to check admin user' };
     }
 
-    const adminUser = users?.find(user => user.email === ADMIN_EMAIL);
+    let adminUser = users.find(u => u.email === ADMIN_EMAIL);
 
     // If admin doesn't exist, create them
     if (!adminUser) {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: ADMIN_EMAIL,
         password: ADMIN_PASSWORD,
         email_confirm: true,
-        user_metadata: {
-          full_name: 'Admin User',
-          is_admin: true,
-        },
+        user_metadata: { role: 'admin' },
       });
 
       if (createError) {
-        console.error('Error creating admin:', createError);
-        return { success: false, error: createError.message };
+        console.error('Error creating admin user:', createError);
+        return { success: false, error: 'Failed to create admin user' };
       }
+
+      adminUser = user;
     }
 
-    // Now try to sign in
+    // Sign in with Supabase client to set the session cookie
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: ADMIN_EMAIL,
       password: ADMIN_PASSWORD,
     });
 
     if (signInError) {
-      console.error('Sign in error:', signInError);
-      return { success: false, error: signInError.message };
+      console.error('Error signing in admin:', signInError);
+      return { success: false, error: 'Failed to sign in admin' };
     }
 
-    if (!signInData?.user) {
-      return { success: false, error: 'No user data received' };
-    }
+    // Wait for session to be set
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Check if profile exists
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', signInData.user.id)
-      .single();
-
-    if (profileError && profileError.code !== 'PGRST116') {
-      console.error('Profile check error:', profileError);
-      return { success: false, error: profileError.message };
-    }
-
-    // Create profile if it doesn't exist
-    if (!profile) {
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: signInData.user.id,
-          email: ADMIN_EMAIL,
-          username: 'admin',
-          full_name: 'Admin User',
-          is_admin: true,
-        });
-
-      if (insertError) {
-        console.error('Profile creation error:', insertError);
-        return { success: false, error: insertError.message };
-      }
-    }
-
-    return {
-      success: true,
-      message: 'Admin login successful',
-      user: signInData.user,
-    };
-  } catch (error: any) {
-    console.error('Admin setup error:', error);
-    return {
-      success: false,
-      error: error?.message || 'Internal server error',
-    };
+    return { success: true };
+  } catch (error) {
+    console.error('Error in admin login:', error);
+    return { success: false, error: 'Internal server error' };
   }
 }

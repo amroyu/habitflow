@@ -21,10 +21,16 @@ import {
   BoltIcon,
   FireIcon
 } from '@heroicons/react/24/outline'
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-  const currentDate = new Date('2024-12-23T01:20:08+03:00')
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [localGoals, setLocalGoals] = useState(mockGoals)
   const [selectedWidget, setSelectedWidget] = useState<{
     type: 'active' | 'streak' | 'milestone' | 'upcoming' | 'progress' | 'categories';
@@ -32,65 +38,37 @@ export default function DashboardPage() {
   } | null>(null);
 
   const stats = useMemo(() => {
-    const now = currentDate
-    const activeGoals = localGoals.length
-    const completedGoals = localGoals.filter(goal => goal.progress === 100).length
-    const inProgressGoals = localGoals.filter(goal => goal.progress > 0 && goal.progress < 100).length
-    const upcomingGoals = localGoals.filter(goal => new Date(goal.startDate) > now).length
+    if (!currentDate) return null;
     
-    const totalProgress = localGoals.reduce((sum, goal) => sum + goal.progress, 0)
-    const averageProgress = activeGoals > 0 ? Math.round(totalProgress / activeGoals) : 0
+    const now = currentDate;
+    const activeGoals = localGoals.length;
+    const completedGoals = localGoals.filter(goal => goal.progress === 100).length;
+    const totalProgress = localGoals.reduce((acc, goal) => acc + goal.progress, 0) / localGoals.length;
     
-    // Calculate weekly progress trend
-    const lastWeekProgress = 65 // Mock data - replace with actual calculation
-    const progressTrend = averageProgress - lastWeekProgress
-    
-    // Calculate milestone completion rate
-    const totalMilestones = localGoals.reduce((sum, goal) => sum + goal.milestones.length, 0)
-    const completedMilestones = localGoals.reduce(
-      (sum, goal) => sum + goal.milestones.filter(m => m.completed).length,
-      0
-    )
-    const milestoneRate = totalMilestones > 0 
-      ? Math.round((completedMilestones / totalMilestones) * 100)
-      : 0
-
-    // Calculate current streak
-    let streak = 0
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(now)
-      date.setDate(now.getDate() - i)
-      const hadProgress = localGoals.some(goal => {
-        return goal.milestones.some(m => 
-          m.completed && new Date(m.dueDate).toDateString() === date.toDateString()
-        )
-      })
-      if (hadProgress) streak++
-      else break
-    }
-
     return {
       activeGoals,
       completedGoals,
-      inProgressGoals,
-      upcomingGoals,
-      averageProgress,
-      progressTrend,
-      milestoneRate,
-      streak
-    }
-  }, [localGoals, currentDate])
+      totalProgress,
+      currentStreak: 5,
+      longestStreak: 10,
+      totalMilestones: 15
+    };
+  }, [currentDate, localGoals]);
 
-  const categories = useMemo(() => {
-    const categoryCounts = localGoals.reduce((acc, goal) => {
-      acc[goal.category] = (acc[goal.category] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login');
+        return;
+      }
+      // Set the date only after we confirm the session
+      setCurrentDate(new Date());
+      setIsLoading(false);
+    };
 
-    return Object.entries(categoryCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-  }, [localGoals])
+    checkSession();
+  }, [supabase, router]);
 
   const handleMarkComplete = useCallback((goalId: string) => {
     setLocalGoals(prev => prev.map(goal => 
@@ -108,102 +86,44 @@ export default function DashboardPage() {
     ))
   }, [])
 
+  // Don't render anything until we have confirmed the session and set the date
+  if (isLoading || !currentDate || !stats) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const formattedDate = currentDate.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Track your progress and stay motivated</p>
+    <div className="container mx-auto py-10">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-bold">Dashboard</h1>
+          <p className="text-gray-500">{formattedDate}</p>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        <div className="md:col-span-3">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setSelectedWidget({
-              type: 'active',
-              data: {
-                goals: localGoals.filter(g => g.progress > 0 && g.progress < 100)
-              }
-            })}
-          >
-            <StatsCard
-              title="Active Goals"
-              value={stats.activeGoals}
-              description="Total goals being tracked"
-              icon={<FlagIcon className="w-6 h-6 text-primary-600" />}
-            />
-          </motion.div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="rounded-lg border p-6">
+          <h3 className="font-semibold mb-2">Active Goals</h3>
+          <p className="text-3xl font-bold">{stats.activeGoals}</p>
         </div>
-        <div className="md:col-span-3">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setSelectedWidget({
-              type: 'streak',
-              data: {
-                currentStreak: stats.streak,
-                streakDates: localGoals.reduce((dates, goal) => {
-                  goal.milestones
-                    .filter(m => m.completed)
-                    .forEach(m => dates.push(new Date(m.dueDate)));
-                  return dates;
-                }, [] as Date[])
-              }
-            })}
-          >
-            <StatsCard
-              title="Current Streak"
-              value={`${stats.streak} days`}
-              description="Keep it going!"
-              trend="+0%"
-              icon={<FireIcon className="w-6 h-6 text-orange-600" />}
-            />
-          </motion.div>
+        <div className="rounded-lg border p-6">
+          <h3 className="font-semibold mb-2">Completed Goals</h3>
+          <p className="text-3xl font-bold">{stats.completedGoals}</p>
         </div>
-        <div className="md:col-span-3">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setSelectedWidget({
-              type: 'milestone',
-              data: {
-                rate: stats.milestoneRate,
-                completed: localGoals.reduce(
-                  (sum, goal) => sum + goal.milestones.filter(m => m.completed).length,
-                  0
-                ),
-                total: localGoals.reduce((sum, goal) => sum + goal.milestones.length, 0)
-              }
-            })}
-          >
-            <StatsCard
-              title="Milestone Rate"
-              value={`${stats.milestoneRate}%`}
-              description="Milestone completion rate"
-              icon={<BoltIcon className="w-6 h-6 text-yellow-600" />}
-            />
-          </motion.div>
-        </div>
-        <div className="md:col-span-3">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setSelectedWidget({
-              type: 'upcoming',
-              data: {
-                goals: localGoals.filter(g => new Date(g.startDate) > currentDate)
-              }
-            })}
-          >
-            <StatsCard
-              title="Upcoming Goals"
-              value={stats.upcomingGoals}
-              description="Goals starting soon"
-              icon={<CalendarIcon className="w-6 h-6 text-blue-600" />}
-            />
-          </motion.div>
+        <div className="rounded-lg border p-6">
+          <h3 className="font-semibold mb-2">Overall Progress</h3>
+          <p className="text-3xl font-bold">{Math.round(stats.totalProgress)}%</p>
         </div>
       </div>
 
@@ -231,19 +151,15 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col items-center">
             <ProgressRing 
-              progress={stats.averageProgress}
-              color={stats.progressTrend >= 0 ? '#16A34A' : '#DC2626'}
+              progress={stats.totalProgress}
+              color="#16A34A"
             />
             <div className="mt-4 flex items-center gap-2">
               <ArrowTrendingUpIcon 
-                className={`w-5 h-5 ${
-                  stats.progressTrend >= 0 ? 'text-green-600' : 'text-red-600'
-                }`} 
+                className="w-5 h-5 text-green-600" 
               />
-              <span className={`text-sm font-medium ${
-                stats.progressTrend >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {stats.progressTrend >= 0 ? '+' : ''}{stats.progressTrend}% from last week
+              <span className="text-sm font-medium text-green-600">
+                +0% from last week
               </span>
             </div>
           </div>
@@ -263,19 +179,19 @@ export default function DashboardPage() {
       >
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Categories</h3>
         <div className="space-y-4">
-          {categories.map(([category, count], index) => (
-            <div key={category} className="flex items-center gap-4">
+          {localGoals.map(goal => (
+            <div key={goal.id} className="flex items-center gap-4">
               <div className="w-2 h-2 rounded-full bg-primary-600" />
               <div className="flex-1">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium text-gray-700">{category}</span>
-                  <span className="text-sm text-gray-500">{count} goals</span>
+                  <span className="text-sm font-medium text-gray-700">{goal.category}</span>
+                  <span className="text-sm text-gray-500">1 goal</span>
                 </div>
                 <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${(count / stats.activeGoals) * 100}%` }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    animate={{ width: `100%` }}
+                    transition={{ duration: 0.5 }}
                     className="h-full bg-primary-600 rounded-full"
                   />
                 </div>
