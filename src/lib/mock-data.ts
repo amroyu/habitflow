@@ -138,7 +138,11 @@ export interface TimelineActivity {
 }
 
 export const initializeMockData = () => {
-  const currentDate = new Date("2025-01-03T14:34:07+03:00");
+  const baseDate = new Date("2025-01-03T14:34:07+03:00");
+  
+  const createActivityDate = (hours: number, minutes: number) => {
+    return new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), hours, minutes);
+  };
   
   const mockData: TimelineActivity[] = [
     // Morning activities
@@ -147,7 +151,7 @@ export const initializeMockData = () => {
       title: "Morning Meditation",
       content: "15 minutes mindfulness practice",
       category: "wellness",
-      time: new Date(currentDate.setHours(7, 0, 0)),
+      time: createActivityDate(7, 0),
       completed: true,
       notes: "Felt very peaceful and centered"
     },
@@ -156,7 +160,7 @@ export const initializeMockData = () => {
       title: "Deep Work Session",
       content: "Focus on completing the project presentation",
       category: "focus",
-      time: new Date(currentDate.setHours(9, 0, 0)),
+      time: createActivityDate(9, 0),
       duration: 90,
       completed: true,
       notes: "Made significant progress on the key slides"
@@ -166,7 +170,7 @@ export const initializeMockData = () => {
       title: "Launch MVP",
       content: "Complete core features and prepare for beta testing",
       category: "work",
-      time: new Date(currentDate.setHours(10, 0, 0)),
+      time: createActivityDate(10, 0),
       value: 75,
       notes: "Backend API is complete, frontend needs polish"
     },
@@ -174,7 +178,7 @@ export const initializeMockData = () => {
       type: "task",
       title: "Team Sync Meeting",
       category: "work",
-      time: new Date(currentDate.setHours(11, 0, 0)),
+      time: createActivityDate(11, 0),
       duration: 30,
       completed: true
     },
@@ -183,7 +187,7 @@ export const initializeMockData = () => {
       title: "Q4 Performance Report.pdf",
       content: "Quarterly performance analysis and metrics",
       category: "work",
-      time: new Date(currentDate.setHours(11, 30, 0)),
+      time: createActivityDate(11, 30),
       filePath: "/documents/reports/Q4_Performance.pdf",
       fileType: "pdf"
     },
@@ -192,7 +196,7 @@ export const initializeMockData = () => {
       title: "Project Mockups",
       content: "UI/UX design mockups for the new dashboard",
       category: "work",
-      time: new Date(currentDate.setHours(12, 15, 0)),
+      time: createActivityDate(12, 15),
       filePath: "/documents/design/mockups.fig",
       fileType: "figma"
     },
@@ -201,7 +205,7 @@ export const initializeMockData = () => {
       title: "Learn TypeScript",
       content: "Complete Advanced TypeScript Course",
       category: "learning",
-      time: new Date(currentDate.setHours(13, 0, 0)),
+      time: createActivityDate(13, 0),
       value: 60,
       notes: "Finished Generics module"
     },
@@ -210,7 +214,7 @@ export const initializeMockData = () => {
       title: "Interesting Article on Productivity",
       content: "How to structure your day for maximum productivity",
       category: "learning",
-      time: new Date(currentDate.setHours(13, 45, 0)),
+      time: createActivityDate(13, 45),
       url: "https://example.com/productivity-tips",
       tags: ["productivity", "learning"]
     },
@@ -219,7 +223,7 @@ export const initializeMockData = () => {
       title: "Backend API Tasks",
       content: "Moved 3 tasks to Done, 2 new tasks added to In Progress",
       category: "work",
-      time: new Date(currentDate.setHours(14, 0, 0)),
+      time: createActivityDate(14, 0),
       notes: "Sprint progress is on track"
     },
     {
@@ -227,7 +231,7 @@ export const initializeMockData = () => {
       title: "Project Ideas",
       content: "1. AI-powered task prioritization\n2. Integration with calendar\n3. Mobile app with offline support",
       category: "work",
-      time: new Date(currentDate.setHours(14, 30, 0)),
+      time: createActivityDate(14, 30),
       tags: ["ideas", "features", "planning"]
     },
     {
@@ -235,7 +239,7 @@ export const initializeMockData = () => {
       title: "Whiteboard Session",
       content: "Team brainstorming for new features",
       category: "work",
-      time: new Date(currentDate.setHours(15, 0, 0)),
+      time: createActivityDate(15, 0),
       thumbnailUrl: "/images/whiteboard-session.jpg",
       filePath: "/images/whiteboard-session.jpg",
       fileType: "image"
@@ -245,7 +249,7 @@ export const initializeMockData = () => {
       title: "Daily Exercise",
       content: "30 minutes cardio workout",
       category: "wellness",
-      time: new Date(currentDate.setHours(16, 0, 0)),
+      time: createActivityDate(16, 0),
       completed: false
     },
     {
@@ -253,7 +257,7 @@ export const initializeMockData = () => {
       title: "Client Meeting",
       content: "Review project milestones with the client",
       category: "work",
-      time: new Date(currentDate.setHours(16, 30, 0)),
+      time: createActivityDate(16, 30),
       duration: 60,
       notes: "Prepare demo of new features"
     }

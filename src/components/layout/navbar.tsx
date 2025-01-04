@@ -34,6 +34,17 @@ import { HabitForm } from '@/components/habits/habit-form'
 import { QuickTimer } from '@/components/quick-timer'
 import { useToast } from '@/components/ui/use-toast'
 import type { Goal, Habit } from '@/types'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect } from 'react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const navItems = [
   {
@@ -74,6 +85,34 @@ export default function Navbar() {
   const [isGoalDialogOpen, setIsGoalDialogOpen] = useState(false)
   const [isHabitDialogOpen, setIsHabitDialogOpen] = useState(false)
   const [isTimerDialogOpen, setIsTimerDialogOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      setLoading(false)
+    }
+
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
+
+  const handleSignIn = () => {
+    router.push('/login')
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.refresh()
+  }
 
   const quickActions = [
     {
@@ -255,20 +294,56 @@ export default function Navbar() {
             </Popover>
 
             <Button variant="ghost" size="icon">
-              <Search className="h-4 w-4" />
+              <Search className="h-5 w-5" />
             </Button>
 
             <Button variant="ghost" size="icon">
-              <Bell className="h-4 w-4" />
+              <Bell className="h-5 w-5" />
             </Button>
 
             <Button variant="ghost" size="icon">
-              <HelpCircle className="h-4 w-4" />
+              <HelpCircle className="h-5 w-5" />
             </Button>
 
-            <Button variant="ghost" size="icon">
-              <Settings className="h-4 w-4" />
-            </Button>
+            {loading ? (
+              <Button variant="ghost" disabled>Loading...</Button>
+            ) : user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.user_metadata?.avatar_url} alt={user.email} />
+                      <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user.email}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user.user_metadata?.full_name}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/profile')}>
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/settings')}>
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={handleSignIn}>
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </nav>

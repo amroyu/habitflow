@@ -8,6 +8,9 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Checkbox } from "../../components/ui/checkbox";
 import { AvatarUpload } from "../../components/ui/avatar-upload";
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SignUpPage() {
   const [firstName, setFirstName] = useState("");
@@ -17,10 +20,97 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const supabase = createClientComponentClient();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission with firstName and lastName instead of fullName
+    setLoading(true);
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Sign up the user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            username,
+            full_name: `${firstName} ${lastName}`,
+          },
+        },
+      });
+
+      if (authError) throw authError;
+
+      // Upload profile image if one was selected
+      if (profileImage && authData.user) {
+        const fileExt = profileImage.name.split('.').pop();
+        const filePath = `${authData.user.id}/profile.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, profileImage);
+
+        if (uploadError) throw uploadError;
+
+        // Update user's avatar_url
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: {
+            avatar_url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`,
+          },
+        });
+
+        if (updateError) throw updateError;
+      }
+
+      toast({
+        title: "Success",
+        description: "Account created successfully. Please check your email to verify your account.",
+      });
+
+      router.push('/login');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthSignIn = async (provider: 'google' | 'twitter') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleImageChange = (file: File) => {
@@ -133,8 +223,12 @@ export default function SignUpPage() {
               </Label>
             </div>
 
-            <Button type="submit" className="w-full h-10">
-              Create Account
+            <Button 
+              type="submit" 
+              className="w-full h-10"
+              disabled={loading}
+            >
+              {loading ? "Creating Account..." : "Create Account"}
             </Button>
 
             <div className="relative">
@@ -147,11 +241,21 @@ export default function SignUpPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-10">
+              <Button 
+                variant="outline" 
+                className="h-10"
+                onClick={() => handleOAuthSignIn('google')}
+                disabled={loading}
+              >
                 <Image src="/google.svg" alt="Google" width={18} height={18} className="mr-2" />
                 Google
               </Button>
-              <Button variant="outline" className="h-10">
+              <Button 
+                variant="outline" 
+                className="h-10"
+                onClick={() => handleOAuthSignIn('twitter')}
+                disabled={loading}
+              >
                 <Image src="/twitter.svg" alt="Twitter" width={18} height={18} className="mr-2" />
                 Twitter
               </Button>

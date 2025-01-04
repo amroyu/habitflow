@@ -7,13 +7,102 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useRouter } from 'next/navigation'
+import { useToast } from "@/components/ui/use-toast"
+import { adminLogin } from './actions';
 
 export default function LoginPage() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const supabase = createClientComponentClient();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: usernameOrEmail,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "You have been signed in successfully.",
+      });
+
+      router.refresh();
+      router.push('/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthSignIn = async (provider: 'google' | 'twitter') => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAdminLogin = async () => {
+    setLoading(true);
+
+    try {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: 'admin@habitflow.app',
+        password: 'admin123',
+      });
+
+      if (signInError) {
+        throw new Error(signInError.message);
+      }
+
+      if (!signInData?.user) {
+        throw new Error('No user data received');
+      }
+
+      toast({
+        title: "Success",
+        description: "Logged in as admin successfully.",
+      });
+
+      router.refresh();
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error('Admin login error:', error);
+      toast({
+        title: "Error",
+        description: error.message || 'An unexpected error occurred',
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,22 +111,20 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-6 bg-white">
         <div className="w-full max-w-md space-y-4">
           <div className="flex flex-col items-center space-y-4">
-            <div className="flex items-center justify-center w-[120px]">
+            <div className="flex items-center justify-center w-[120px] h-[30px] relative">
               <Image
                 src="/logos/logo-light.svg"
                 alt="HabitFlow"
-                width={120}
-                height={30}
-                priority
+                fill
                 className="dark:hidden"
+                unoptimized
               />
               <Image
                 src="/logos/logo-dark.svg"
                 alt="HabitFlow"
-                width={120}
-                height={30}
-                priority
+                fill
                 className="hidden dark:block"
+                unoptimized
               />
             </div>
             <div className="text-center space-y-1.5">
@@ -80,8 +167,12 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button type="submit" className="w-full h-10">
-              Sign in
+            <Button 
+              type="submit" 
+              className="w-full h-10"
+              disabled={loading}
+            >
+              {loading ? "Signing in..." : "Sign in"}
             </Button>
 
             <div className="relative">
@@ -94,44 +185,77 @@ export default function LoginPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-10">
-                <Image src="/google.svg" alt="Google" width={18} height={18} className="mr-2" />
+              <Button 
+                variant="outline" 
+                className="h-10"
+                onClick={() => handleOAuthSignIn('google')}
+                disabled={loading}
+              >
+                <div className="relative w-[18px] h-[18px] mr-2">
+                  <Image
+                    src="/google.svg"
+                    alt="Google"
+                    fill
+                    className="mr-2"
+                    unoptimized
+                  />
+                </div>
                 Google
               </Button>
-              <Button variant="outline" className="h-10">
-                <Image src="/twitter.svg" alt="Twitter" width={18} height={18} className="mr-2" />
+              <Button 
+                variant="outline" 
+                className="h-10"
+                onClick={() => handleOAuthSignIn('twitter')}
+                disabled={loading}
+              >
+                <div className="relative w-[18px] h-[18px] mr-2">
+                  <Image
+                    src="/twitter.svg"
+                    alt="Twitter"
+                    fill
+                    className="mr-2"
+                    unoptimized
+                  />
+                </div>
                 Twitter
               </Button>
             </div>
 
-            <p className="text-center text-sm text-gray-500">
-              Don't have an account?{" "}
-              <Link href="/signup" className="text-primary hover:underline">
-                Sign up
-              </Link>
-            </p>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-2 text-gray-500">Quick Access</span>
+              </div>
+            </div>
+
+            <Button 
+              variant="secondary"
+              className="w-full h-10"
+              onClick={handleAdminLogin}
+              disabled={loading}
+            >
+              {loading ? "Signing in..." : "Login as Admin"}
+            </Button>
+
           </form>
         </div>
       </div>
 
       {/* Right section - Image */}
       <div className="hidden lg:block lg:w-1/2 relative">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-full h-[calc(100vh-64px)]">
-            <Image
-              src="/login-background.jpg"
-              alt="Login"
-              fill
-              sizes="50vw"
-              priority
-              style={{ 
-                objectFit: 'cover', 
-                objectPosition: '75% center',
-                maxHeight: 'calc(100vh - 64px)' 
-              }}
-              className="w-full"
-            />
-          </div>
+        <div className="absolute inset-0">
+          <Image
+            src="/login-background.jpg"
+            alt="Login"
+            fill
+            style={{ 
+              objectFit: 'cover', 
+              objectPosition: '75% center',
+            }}
+            unoptimized
+          />
         </div>
       </div>
     </div>

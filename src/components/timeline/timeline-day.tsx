@@ -364,7 +364,11 @@ export function TimelineDay({ activities }: TimelineDayProps) {
               </div>
             )}
             <div className="text-xs text-muted-foreground pt-2 border-t">
-              {format(activity.time, "PPpp")}
+              {activity.time ? (
+                isValid(activity.time) ? 
+                  format(activity.time, "PPpp") : 
+                  "Invalid time"
+              ) : "No time specified"}
             </div>
           </div>
         </DialogContent>
@@ -419,10 +423,15 @@ export function TimelineDay({ activities }: TimelineDayProps) {
               </div>
               <div className="flex-1 space-y-1 min-h-[2.5rem]">
                 {getActivityContent(activity)}
-                {activity.time && isValid(activity.time) && (
+                {activity.time && isValid(activity.time) ? (
                   <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {format(activity.time, "h:mm a")}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Invalid time
                   </div>
                 )}
               </div>
