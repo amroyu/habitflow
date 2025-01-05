@@ -11,6 +11,7 @@ import { TasksSection } from "@/components/tasks/tasks-section";
 import type { Habit, Goal, Widget, TimerTask } from "@/types";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { useTrackerData } from '@/hooks/useTrackerData';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,22 +20,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function TrackerPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [tasks, setTasks] = useState<TimerTask[]>([]);
-  
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedHabits = localStorage.getItem('habits');
-      const savedGoals = localStorage.getItem('goals');
-      const savedTasks = localStorage.getItem('timerTasks');
-      setHabits(savedHabits ? JSON.parse(savedHabits) : []);
-      setGoals(savedGoals ? JSON.parse(savedGoals) : []);
-      setTasks(savedTasks ? JSON.parse(savedTasks) : []);
-      setIsLoading(false);
-    }
-  }, []);
+  const {
+    habits,
+    goals,
+    tasks,
+    categories,
+    isLoading,
+    saveHabit,
+    saveGoal,
+    deleteHabit,
+    deleteGoal,
+    updateTasks,
+  } = useTrackerData();
+
+  console.log('Categories in tracker page:', categories);
 
   const [createType, setCreateType] = useState<"habit" | "goal" | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -43,139 +42,88 @@ export default function TrackerPage() {
   const [sortBy, setSortBy] = useState<"recent" | "progress" | "streak">("recent");
   const { toast } = useToast();
 
-  const handleSaveHabit = (habitData: Partial<Habit>) => {
-    const newHabit: Habit = {
-      id: String(Date.now()),
-      title: habitData.title || '',
-      description: habitData.description || '',
-      frequency: habitData.frequency || 'daily',
-      type: habitData.type || 'good',
-      category: habitData.category || '',
-      streak: {
-        currentStreak: 0,
-        longestStreak: 0,
-        lastUpdated: new Date().toISOString()
-      },
-      progress: 0,
-      completedCount: 0,
-      startDate: new Date().toISOString(),
-      widgets: [],
-    };
-
-    setHabits(currentHabits => {
-      const updated = [...currentHabits, newHabit];
-      localStorage.setItem('habits', JSON.stringify(updated));
-      return updated;
-    });
-
-    setIsDialogOpen(false);
-    setCreateType(null);
-    toast({
-      title: "Habit Created",
-      description: `Successfully created habit: ${newHabit.title}`,
-    });
-  };
-
-  const handleSaveGoal = (goalData: Partial<Goal>) => {
-    const newGoal: Goal = {
-      id: String(Date.now()),
-      title: goalData.title || '',
-      description: goalData.description || '',
-      targets: goalData.targets || [],
-      endDate: goalData.endDate || new Date().toISOString(),
-      type: goalData.type || 'do',
-      category: goalData.category || '',
-      status: 'active',
-      progress: 0,
-      entries: [],
-      widgets: [],
-      milestones: []
-    };
-
-    setGoals(currentGoals => {
-      const updated = [...currentGoals, newGoal];
-      localStorage.setItem('goals', JSON.stringify(updated));
-      return updated;
-    });
-
-    setIsDialogOpen(false);
-    setCreateType(null);
-    toast({
-      title: "Goal Created",
-      description: `Successfully created goal: ${newGoal.title}`,
-    });
-  };
-
-  const handleUpdateHabit = (habit: Habit) => {
-    setHabits(currentHabits => {
-      const updated = currentHabits.map(h => h.id === habit.id ? habit : h);
-      localStorage.setItem('habits', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleUpdateGoal = (goal: Goal) => {
-    setGoals(currentGoals => {
-      const updated = currentGoals.map(g => g.id === goal.id ? goal : g);
-      localStorage.setItem('goals', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleAddWidget = (goalId: string, widget: Widget) => {
-    setGoals(currentGoals => {
-      const updated = currentGoals.map(goal => {
-        if (goal.id === goalId) {
-          return {
-            ...goal,
-            widgets: [...(goal.widgets || []), widget]
-          };
-        }
-        return goal;
+  const handleSaveHabit = async (habitData: Partial<Habit>) => {
+    try {
+      console.log('Attempting to save habit:', habitData);
+      await saveHabit(habitData);
+      toast({
+        title: habitData.id ? "Habit updated" : "Habit created",
+        description: "Your habit has been saved successfully.",
       });
-      localStorage.setItem('goals', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const handleRemoveWidget = (goalId: string, widgetId: string) => {
-    setGoals(currentGoals => {
-      const updated = currentGoals.map(goal => {
-        if (goal.id === goalId) {
-          return {
-            ...goal,
-            widgets: goal.widgets ? goal.widgets.filter(w => w.id !== widgetId) : []
-          };
-        }
-        return goal;
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Error in handleSaveHabit:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save habit",
+        variant: "destructive",
       });
-      localStorage.setItem('goals', JSON.stringify(updated));
-      return updated;
-    });
+    }
   };
 
-  const handleDeleteHabit = (habitId: string) => {
-    setHabits(currentHabits => {
-      const updated = currentHabits.filter(habit => habit.id !== habitId);
-      localStorage.setItem('habits', JSON.stringify(updated));
-      return updated;
-    });
-    toast({
-      title: "Habit Deleted",
-      description: "The habit has been successfully deleted.",
-    });
+  const handleSaveGoal = async (goalData: Partial<Goal>) => {
+    try {
+      await saveGoal(goalData);
+      toast({
+        title: goalData.id ? "Goal updated" : "Goal created",
+        description: "Your goal has been saved successfully.",
+      });
+      handleCloseDialog();
+    } catch (error) {
+      console.error('Error saving goal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save goal. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteGoal = (goalId: string) => {
-    setGoals(currentGoals => {
-      const updated = currentGoals.filter(goal => goal.id !== goalId);
-      localStorage.setItem('goals', JSON.stringify(updated));
-      return updated;
-    });
+  const handleDeleteHabit = async (habitId: string) => {
+    try {
+      await deleteHabit(habitId);
+      toast({
+        title: "Habit deleted",
+        description: "Your habit has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting habit:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete habit. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleUpdateTasks = (updatedTasks: TimerTask[]) => {
-    setTasks(updatedTasks);
+  const handleDeleteGoal = async (goalId: string) => {
+    try {
+      await deleteGoal(goalId);
+      toast({
+        title: "Goal deleted",
+        description: "Your goal has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete goal. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateTasks = async (updatedTasks: TimerTask[]) => {
+    try {
+      await updateTasks(updatedTasks);
+    } catch (error) {
+      console.error('Error updating tasks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update tasks. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCloseDialog = () => {
@@ -189,14 +137,14 @@ export default function TrackerPage() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-8">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
+    <div className="container mx-auto p-4 space-y-8">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
           <Input
             placeholder="Search habits and goals..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-[300px]"
+            className="w-64"
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -205,88 +153,91 @@ export default function TrackerPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setView("grid")}>
-                Grid View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setView("list")}>
-                List View
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("recent")}>
-                Sort by Recent
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("progress")}>
-                Sort by Progress
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortBy("streak")}>
-                Sort by Streak
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setView("grid")}>Grid View</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setView("list")}>List View</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("recent")}>Sort by Recent</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("progress")}>Sort by Progress</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortBy("streak")}>Sort by Streak</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" /> Create New
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Create New
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => {
+              setCreateType("habit");
+              setIsDialogOpen(true);
+            }}>
+              New Habit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+              setCreateType("goal");
+              setIsDialogOpen(true);
+            }}>
+              New Goal
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-
-      <Suspense fallback={<div>Loading...</div>}>
-        {!isLoading && (
-          <div className="space-y-8">
-            <TrackerGrid
-              habits={habits}
-              goals={goals}
-              searchQuery={searchQuery}
-              view={view}
-              sortBy={sortBy}
-              onUpdateHabit={handleUpdateHabit}
-              onUpdateGoal={handleUpdateGoal}
-              onDeleteHabit={handleDeleteHabit}
-              onDeleteGoal={handleDeleteGoal}
-              onAddWidget={handleAddWidget}
-              onRemoveWidget={handleRemoveWidget}
-            />
-            
-            <TasksSection tasks={tasks} onUpdateTasks={handleUpdateTasks} />
-          </div>
-        )}
-      </Suspense>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {createType ? `Create New ${createType === 'habit' ? 'Habit' : 'Goal'}` : 'Create New'}
+              {createType === "habit" ? "Create New Habit" : "Create New Goal"}
             </DialogTitle>
           </DialogHeader>
-          {!createType ? (
-            <div className="flex flex-col gap-4">
-              <Button
-                onClick={() => setCreateType("habit")}
-                className="w-full py-8 text-lg"
-                variant="outline"
-              >
-                Create New Habit
-              </Button>
-              <Button
-                onClick={() => setCreateType("goal")}
-                className="w-full py-8 text-lg"
-                variant="outline"
-              >
-                Create New Goal
-              </Button>
-            </div>
-          ) : createType === "habit" ? (
+          {createType === "habit" ? (
             <HabitForm
               onClose={handleCloseDialog}
               onSave={handleSaveHabit}
+              categories={categories}
             />
-          ) : (
+          ) : createType === "goal" ? (
             <GoalForm
               onClose={handleCloseDialog}
               onSave={handleSaveGoal}
             />
-          )}
+          ) : null}
         </DialogContent>
       </Dialog>
+
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : (
+        <>
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Habits</h2>
+            <TrackerGrid
+              items={habits}
+              onDelete={deleteHabit}
+              onEdit={(habit) => {
+                setCreateType("habit");
+                setIsDialogOpen(true);
+              }}
+            />
+          </section>
+
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Goals</h2>
+            <TrackerGrid
+              items={goals}
+              onDelete={deleteGoal}
+              onEdit={(goal) => {
+                setCreateType("goal");
+                setIsDialogOpen(true);
+              }}
+            />
+          </section>
+
+          <TasksSection tasks={tasks} onUpdateTasks={updateTasks} />
+        </>
+      )}
     </div>
   );
 }

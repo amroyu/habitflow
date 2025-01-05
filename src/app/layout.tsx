@@ -7,11 +7,13 @@ import { RewardsProvider } from '@/context/rewards-context'
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/components/AuthProvider'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin']
+})
 
 export const metadata: Metadata = {
   title: 'HabitFlow',
-  description: 'Track your habits and achieve your goals',
+  description: 'Track your habits and achieve your goals'
 }
 
 export default function RootLayout({

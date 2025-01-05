@@ -193,10 +193,13 @@ export function HabitCard({
         type,
         streak: {
           currentStreak: streak.currentStreak + 1,
-          longestStreak: Math.max(streak.longestStreak, streak.currentStreak + 1),
+          longestStreak: Math.max(
+            streak.longestStreak,
+            streak.currentStreak + 1
+          ),
           lastUpdated: new Date().toISOString(),
         },
-        progress: Math.min((completedCount + 1) / target * 100, 100),
+        progress: Math.min(((completedCount + 1) / target) * 100, 100),
         lastCompleted: new Date().toISOString(),
         startDate,
         completedCount: completedCount + 1,
@@ -565,7 +568,9 @@ export function HabitCard({
                       <WidgetSettingsDialog
                         widget={selectedWidget}
                         open={true}
-                        onOpenChange={(open) => !open && setSelectedWidget(null)}
+                        onOpenChange={(open) =>
+                          !open && setSelectedWidget(null)
+                        }
                         onSave={handleSaveWidgetSettings}
                       />
                     </CardContent>

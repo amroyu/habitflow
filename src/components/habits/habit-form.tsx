@@ -1,227 +1,240 @@
-'use client';
+"use client";
 
-import { Fragment, useState } from 'react'
-import { XMarkIcon, PlusIcon } from '@heroicons/react/24/outline'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Habit, HabitType, HabitCategory } from '@/types'
-import { Badge } from 'lucide-react'
+import { Fragment, useState, useEffect } from "react";
+import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Habit, HabitType, HabitCategory } from "@/types";
+import { Badge } from "lucide-react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { useToast } from "@/components/ui/use-toast";
 
 interface HabitFormProps {
-  onClose: () => void
-  onSave: (habit: Partial<Habit>) => void
-  initialData?: Partial<Habit>
+  onClose: () => void;
+  onSave: (habit: Partial<Habit>) => Promise<void>;
+  initialData?: Partial<Habit>;
+  categories: HabitCategory[];
 }
 
-const FREQUENCIES = [
-  'Daily',
-  'Weekly',
-  'Monthly',
-] as const;
+export function HabitForm({
+  onClose,
+  onSave,
+  initialData,
+  categories,
+}: HabitFormProps) {
+  const [formData, setFormData] = useState({
+    title: initialData?.title || "",
+    description: initialData?.description || "",
+    type: initialData?.type || "good",
+    category_id: initialData?.category_id || "",
+    frequency: initialData?.frequency || "daily",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { toast } = useToast();
 
-const DEFAULT_CATEGORIES: Record<HabitType, HabitCategory[]> = {
-  good: [
-    { id: 'health', name: 'Health & Fitness', type: 'good', color: '#22c55e' },
-    { id: 'learning', name: 'Learning', type: 'good', color: '#3b82f6' },
-    { id: 'productivity', name: 'Productivity', type: 'good', color: '#8b5cf6' },
-  ],
-  bad: [
-    { id: 'procrastination', name: 'Procrastination', type: 'bad', color: '#ef4444' },
-    { id: 'unhealthy', name: 'Unhealthy Habits', type: 'bad', color: '#f97316' },
-    { id: 'distractions', name: 'Distractions', type: 'bad', color: '#f59e0b' },
-  ]
-};
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
 
-export function HabitForm({ onClose, onSave, initialData }: HabitFormProps) {
-  const [categories, setCategories] = useState<Record<HabitType, HabitCategory[]>>(
-    () => {
-      const savedCategories = localStorage.getItem('habitCategories');
-      return savedCategories ? JSON.parse(savedCategories) : DEFAULT_CATEGORIES;
+    if (!formData.title.trim()) {
+      newErrors.title = "Title is required";
     }
-  );
-  const [selectedType, setSelectedType] = useState<HabitType>(initialData?.type || 'good');
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: '', color: '#000000' });
-
-  const handleAddCategory = () => {
-    if (newCategory.name) {
-      const newCategoryItem: HabitCategory = {
-        id: crypto.randomUUID(),
-        name: newCategory.name,
-        type: selectedType,
-        color: newCategory.color,
-      };
-      
-      const updatedCategories = {
-        ...categories,
-        [selectedType]: [...categories[selectedType], newCategoryItem],
-      };
-      
-      setCategories(updatedCategories);
-      localStorage.setItem('habitCategories', JSON.stringify(updatedCategories));
-      setNewCategory({ name: '', color: '#000000' });
-      setIsAddingCategory(false);
+    if (!formData.type) {
+      newErrors.type = "Type is required";
     }
+    if (!formData.category_id) {
+      newErrors.category_id = "Category is required";
+    }
+    if (!formData.frequency) {
+      newErrors.frequency = "Frequency is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleRemoveCategory = (categoryId: string) => {
-    const updatedCategories = {
-      ...categories,
-      [selectedType]: categories[selectedType].filter(cat => cat.id !== categoryId),
-    };
-    setCategories(updatedCategories);
-    localStorage.setItem('habitCategories', JSON.stringify(updatedCategories));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const habitData: Partial<Habit> = {
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      frequency: formData.get('frequency') as string,
-      type: formData.get('type') as HabitType,
-      category: formData.get('category') as string,
-    };
-    onSave(habitData);
+
+    if (!validateForm()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log("Form data before submission:", formData);
+      const habitData = {
+        ...formData,
+        title: formData.title.trim(),
+        description: formData.description.trim() || null,
+        type: formData.type as "good" | "bad",
+        frequency: formData.frequency as "daily" | "weekly" | "monthly",
+      };
+      console.log("Submitting habit data:", habitData);
+      await onSave(habitData);
+      toast({
+        title: "Success",
+        description: "Habit saved successfully",
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to save habit. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label>Habit Type</Label>
-        <RadioGroup 
-          defaultValue={selectedType} 
-          name="type" 
-          className="flex gap-4"
-          onValueChange={(value: HabitType) => setSelectedType(value)}
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="good" id="good" />
-            <Label htmlFor="good" className="text-green-600 font-medium">Good Habit</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="bad" id="bad" />
-            <Label htmlFor="bad" className="text-red-600 font-medium">Bad Habit</Label>
-          </div>
-        </RadioGroup>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
-        <Input 
+        <Label htmlFor="title" className="flex items-center gap-1">
+          Title <span className="text-red-500">*</span>
+        </Label>
+        <Input
           id="title"
-          name="title"
-          required
-          defaultValue={initialData?.title}
+          value={formData.title}
+          onChange={(e) => {
+            setFormData({ ...formData, title: e.target.value });
+            if (errors.title) {
+              setErrors({ ...errors, title: "" });
+            }
+          }}
+          className={errors.title ? "border-red-500" : ""}
         />
+        {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
-          name="description"
-          defaultValue={initialData?.description}
+          value={formData.description}
+          onChange={(e) =>
+            setFormData({ ...formData, description: e.target.value })
+          }
         />
       </div>
 
       <div className="space-y-2">
-        <Label>Frequency</Label>
-        <Select name="frequency" defaultValue={initialData?.frequency || 'Daily'}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select frequency" />
+        <Label htmlFor="type" className="flex items-center gap-1">
+          Type <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={formData.type}
+          onValueChange={(value) => {
+            setFormData({ ...formData, type: value as "good" | "bad" });
+            if (errors.type) {
+              setErrors({ ...errors, type: "" });
+            }
+          }}
+        >
+          <SelectTrigger className={errors.type ? "border-red-500" : ""}>
+            <SelectValue placeholder="Select type" />
           </SelectTrigger>
           <SelectContent>
-            {FREQUENCIES.map((freq) => (
-              <SelectItem key={freq} value={freq}>
-                {freq}
-              </SelectItem>
-            ))}
+            <SelectItem value="good">Good Habit</SelectItem>
+            <SelectItem value="bad">Bad Habit</SelectItem>
           </SelectContent>
         </Select>
+        {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
       </div>
 
       <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <Label>Category</Label>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsAddingCategory(true)}
+        <Label htmlFor="category" className="flex items-center gap-1">
+          Category <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={formData.category_id}
+          onValueChange={(value) => {
+            console.log("Selected category:", value);
+            setFormData({ ...formData, category_id: value });
+            if (errors.category_id) {
+              setErrors({ ...errors, category_id: "" });
+            }
+          }}
+        >
+          <SelectTrigger
+            id="category"
+            className={errors.category_id ? "border-red-500" : ""}
           >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            Add Category
-          </Button>
-        </div>
-        
-        {isAddingCategory ? (
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Category name"
-                value={newCategory.name}
-                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-              />
-              <Input
-                type="color"
-                value={newCategory.color}
-                onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
-                className="w-14 p-1 h-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                onClick={handleAddCategory}
-                className="flex-1"
-              >
-                Add
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsAddingCategory(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <Select name="category" defaultValue={initialData?.category}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories[selectedType].map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.length === 0 ? (
+              <SelectItem value="" disabled>
+                No categories available
+              </SelectItem>
+            ) : (
+              categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
                   <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: cat.color }}
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: category.color }}
                     />
-                    {cat.name}
+                    {category.name}
                   </div>
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+        {errors.category_id && (
+          <p className="text-sm text-red-500">{errors.category_id}</p>
         )}
       </div>
 
-      <div className="flex gap-4 pt-4">
-        <Button type="submit" className="flex-1">
-          Save Habit
-        </Button>
-        <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+      <div className="space-y-2">
+        <Label htmlFor="frequency" className="flex items-center gap-1">
+          Frequency <span className="text-red-500">*</span>
+        </Label>
+        <Select
+          value={formData.frequency}
+          onValueChange={(value) => {
+            setFormData({ ...formData, frequency: value });
+            if (errors.frequency) {
+              setErrors({ ...errors, frequency: "" });
+            }
+          }}
+        >
+          <SelectTrigger className={errors.frequency ? "border-red-500" : ""}>
+            <SelectValue placeholder="Select frequency" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="daily">Daily</SelectItem>
+            <SelectItem value="weekly">Weekly</SelectItem>
+            <SelectItem value="monthly">Monthly</SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.frequency && (
+          <p className="text-sm text-red-500">{errors.frequency}</p>
+        )}
+      </div>
+
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
+        <Button type="submit">Save</Button>
       </div>
     </form>
   );

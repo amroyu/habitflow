@@ -1,4 +1,4 @@
-export type MilestoneFrequency = 'daily' | 'weekly' | 'monthly';
+export type MilestoneFrequency = "daily" | "weekly" | "monthly";
 
 export interface Milestone {
   id: string;
@@ -6,7 +6,7 @@ export interface Milestone {
   description?: string;
   dueDate?: string;
   completed: boolean;
-  status: 'pending' | 'in-progress' | 'completed';
+  status: "pending" | "in-progress" | "completed";
   progress?: number;
   frequency?: MilestoneFrequency;
 }
@@ -17,7 +17,7 @@ export interface RoadMap {
   description: string;
   finalTarget: string;
   milestones: Milestone[];
-  status: 'draft' | 'active' | 'completed' | 'not_started';
+  status: "draft" | "active" | "completed" | "not_started";
   progress: number;
   createdAt: string;
   updatedAt: string;
@@ -55,7 +55,7 @@ export interface ChecklistItem {
 }
 
 export interface EntryContent {
-  type: 'text' | 'checklist' | 'link' | 'file';
+  type: "text" | "checklist" | "link" | "file";
   data: {
     text?: string;
     items?: ChecklistItem[];
@@ -65,17 +65,17 @@ export interface EntryContent {
   };
 }
 
-export type WidgetType = 
-  | 'pomodoro-timer' 
-  | 'counter' 
-  | 'notes' 
-  | 'checklist' 
-  | 'progress-chart'
-  | 'files'
-  | 'links'
-  | 'gallery'
-  | 'calendar'
-  | 'kanban';
+export type WidgetType =
+  | "pomodoro-timer"
+  | "counter"
+  | "notes"
+  | "checklist"
+  | "progress-chart"
+  | "files"
+  | "links"
+  | "gallery"
+  | "calendar"
+  | "kanban";
 
 export interface WidgetSettings {
   // Pomodoro settings
@@ -174,9 +174,9 @@ export interface Goal {
   description: string;
   targets: Target[];
   endDate: string;
-  type: 'do' | 'dont';
+  type: "do" | "dont";
   category: string;
-  status: 'active' | 'completed' | 'failed';
+  status: "active" | "completed" | "failed";
   progress: number;
   entries: DailyEntry[];
   widgets: Widget[];
@@ -188,7 +188,7 @@ export interface Habit {
   title: string;
   description: string;
   frequency: string;
-  type: 'good' | 'bad';
+  type: "good" | "bad";
   streak: {
     currentStreak: number;
     longestStreak: number;
@@ -207,7 +207,7 @@ export interface Resource {
   id: string;
   title: string;
   description: string;
-  type: 'article' | 'video' | 'book' | 'tool' | 'course';
+  type: "article" | "video" | "book" | "tool" | "course";
   url: string;
   author: string;
   thumbnail?: string;
@@ -216,7 +216,7 @@ export interface Resource {
   saves: number;
   dateAdded: string;
   readTime?: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  difficulty: "beginner" | "intermediate" | "advanced";
   isPremium: boolean;
 }
 
@@ -230,5 +230,5 @@ export interface TimerTask {
   createdAt: string;
   lastRunAt: string | null;
   archived: boolean;
-  source?: 'manual' | 'checklist' | 'quick-timer';
+  source?: "manual" | "checklist" | "quick-timer";
 }

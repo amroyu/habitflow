@@ -12,17 +12,6 @@ BEGIN
     END IF;
 END $$;
 
--- Function to confirm a user
-CREATE OR REPLACE FUNCTION confirm_user(user_id UUID)
-RETURNS void AS $$
-BEGIN
-    UPDATE auth.users
-    SET email_confirmed_at = NOW(),
-        confirmed_at = NOW()
-    WHERE id = user_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
 -- Create admin user if it doesn't exist
 DO $$
 DECLARE
@@ -46,10 +35,8 @@ BEGIN
             encrypted_password,
             created_at,
             updated_at,
-            confirmation_token,
             email_confirmed_at,
-            last_sign_in_at,
-            raw_confirmation_token_data
+            last_sign_in_at
         )
         VALUES (
             '00000000-0000-0000-0000-000000000000',
@@ -63,10 +50,8 @@ BEGIN
             crypt('admin123', gen_salt('bf')),
             now(),
             now(),
-            encode(gen_random_bytes(32), 'hex'),
             now(),
-            now(),
-            '{}'::jsonb
+            now()
         )
         RETURNING id INTO admin_user_id;
 
@@ -74,8 +59,7 @@ BEGIN
         INSERT INTO public.profiles (
             id,
             email,
-            username,
-            full_name,
+            name,
             is_admin,
             created_at,
             updated_at
@@ -83,7 +67,6 @@ BEGIN
         VALUES (
             admin_user_id,
             'admin@habitflow.app',
-            'admin',
             'Admin User',
             true,
             now(),

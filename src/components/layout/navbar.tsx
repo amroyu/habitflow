@@ -19,7 +19,8 @@ import {
   TrendingUp,
   ChevronRight,
   Map,
-  History
+  History,
+  Brain
 } from 'lucide-react'
 import {
   Popover,
@@ -67,6 +68,11 @@ const navItems = [
     title: 'Roadmap',
     href: '/roadmap',
     icon: Map,
+  },
+  {
+    title: 'Mindmap',
+    href: '/mindmap',
+    icon: Brain,
   },
   {
     title: 'Analytics',
@@ -162,12 +168,11 @@ export default function Navbar() {
     }
   }
 
-  const handleSaveGoal = (goalData: Partial<Goal>) => {
+  const handleSaveGoal = async (goalData: Partial<Goal>) => {
     const newGoal: Goal = {
       id: String(Date.now()),
       title: goalData.title || '',
       description: goalData.description || '',
-      targets: goalData.targets || [],
       endDate: goalData.endDate || new Date().toISOString(),
       type: goalData.type || 'do',
       category: goalData.category || '',
@@ -175,7 +180,8 @@ export default function Navbar() {
       progress: 0,
       entries: [],
       widgets: [],
-      milestones: []
+      milestones: [],
+      targets: []
     };
 
     // Get existing goals from localStorage
@@ -198,14 +204,14 @@ export default function Navbar() {
     }
   }
 
-  const handleSaveHabit = (habitData: Partial<Habit>) => {
+  const handleSaveHabit = async (habitData: Partial<Habit>) => {
     const newHabit: Habit = {
       id: String(Date.now()),
       title: habitData.title || '',
       description: habitData.description || '',
       frequency: habitData.frequency || 'daily',
       type: habitData.type || 'good',
-      category: habitData.category || '',
+      category: habitData.category || 'general',
       streak: {
         currentStreak: 0,
         longestStreak: 0,
@@ -213,8 +219,10 @@ export default function Navbar() {
       },
       progress: 0,
       completedCount: 0,
+      target: 0,
+      lastCompleted: new Date().toISOString(),
       startDate: new Date().toISOString(),
-      widgets: [],
+      widgets: []
     };
 
     // Get existing habits from localStorage
